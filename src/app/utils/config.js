@@ -1,0 +1,20 @@
+
+const host_name_mqtt = process.env.MQTT_HOST;
+const api_url = process.env.API_URL;
+const mqtt_topic = process.env.MQTT_TOPIC || 'device/state';
+const mqtt_user_name = process.env.MQTT_USER_NAME;
+const mqtt_password = process.env.MQTT_PASSWORD;
+const mqtt_publish_topic = process.env.MQTT_PUBLISH_TOPIC || 'device/updated';
+const mqtt_client_id = process.env.MQTT_CLIENT_ID || 'database_sync_local';
+const mqtt_topic_discovery = process.env.MQTT_TOPIC_SMARTHOME_DISCOVERY || 'smarthome/discovery';
+
+module.exports = {
+    host_name_mqtt,
+    api_url,
+    mqtt_topic,
+    mqtt_user_name,
+    mqtt_password,
+    mqtt_publish_topic,
+    mqtt_client_id,
+    mqtt_topic_discovery,
+};

@@ -1,0 +1,99 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribuição / Empacotamento
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ambientes virtuais
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+ENV/
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de configuração de IDEs/editors
+# Visual Studio Code
+.vscode/
+# PyCharm
+.idea/
+
+# Ferramentas de depuração
+*.log
+
+# PyInstaller
+#  Arquivos gerados pelo PyInstaller
+*.manifest
+*.spec
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Testes e Cobertura
+.cache/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+.tox/
+.cache/
+*.hypothesis/
+.pytest_cache/
+
+# Variáveis de Ambiente e configurações locais sensíveis
+.env
+.env.*
+*.env
+.venv
+venv/
+ENV/
+env/
+venv.bak/
+env.bak/
+
+# Logs e outros arquivos temporários
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+
+# Outros artefatos
+*.sqlite3
+*.db
+
+# Segredos e chaves privadas
+*.pem
+*.key
+*.crt
+# NodeJS build artifacts
+build/
+dist/
+node_modules/
