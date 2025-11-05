@@ -64,13 +64,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # - name: Notify Portainer webhook
-      #   if: github.event_name != 'pull_request'
-      #   run: |
-      #     echo "Triggering Portainer webhook..."
-      #     curl -fsS -X POST "https://portainer.iotsmartsys.tech/api/stacks/webhooks/a5ee392e-b070-4cec-a110-7b580ac28949" \
-      #       && echo "Webhook triggered successfully" \
-      #       || echo "WARNING: Portainer webhook call failed (non-blocking)"
+      - name: Notify Portainer webhook
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "Triggering Portainer webhook..."
+          curl -fsS -X POST "https://portainer.iotsmartsys.tech/api/webhooks/a31b3148-4495-412f-895c-747ef9cedbc8" \
+            && echo "Webhook triggered successfully" \
+            || echo "WARNING: Portainer webhook call failed (non-blocking)"
 
       - name: Summary
         if: github.event_name != 'pull_request'

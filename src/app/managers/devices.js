@@ -74,8 +74,8 @@ function mapPayloadToCreate(devicePayload, platform) {
   const mac_address = devicePayload.mac_address || '00:00:00:00:00:00';
   return {
     device_id: devicePayload.device_id,
-    device_name: devicePayload.name,
-    description: devicePayload.name,
+    device_name: devicePayload.device_id,
+    description: devicePayload.device_id,
     last_active: current_date,
     state: 'Active',
     mac_address: mac_address,
