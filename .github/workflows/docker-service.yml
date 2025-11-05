@@ -13,7 +13,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: smarthome-database-sync
+  IMAGE_NAME: devices-database-sync
 jobs:
   docker:
     name: Build and publish
