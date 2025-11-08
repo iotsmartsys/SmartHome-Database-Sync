@@ -17,17 +17,18 @@ function createClient() {
 
   const client = mqtt.connect(mqttOptions);
 
+  const logger = require('../utils/logger');
   client.on('connect', () => {
-    console.log('Conectado ao MQTT com autenticação');
+    logger.log('Conectado ao MQTT com autenticação');
   });
   client.on('error', (err) => {
-    console.error('Erro no cliente MQTT:', err);
+    logger.error('Erro no cliente MQTT:', err);
   });
   client.on('offline', () => {
-    console.log('Cliente MQTT está offline');
+    logger.log('Cliente MQTT está offline');
   });
   client.on('reconnect', () => {
-    console.log('Cliente MQTT está tentando reconectar');
+    logger.log('Cliente MQTT está tentando reconectar');
   });
 
   return client;

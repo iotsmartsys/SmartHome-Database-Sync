@@ -1,11 +1,12 @@
 const { mqtt_publish_topic } = require('../utils/config');
+const logger = require('../utils/logger');
 
 function publish(client, topic, payload) {
   client.publish(topic, JSON.stringify(payload), (err) => {
     if (err) {
-      console.error(`Erro ao publicar no tópico ${topic}:`, err.message);
+      logger.error(`Erro ao publicar no tópico ${topic}:`, err.message);
     } else {
-      console.log(`Mensagem publicada no tópico ${topic}`);
+      logger.log(`Mensagem publicada no tópico ${topic}`);
     }
   });
 }

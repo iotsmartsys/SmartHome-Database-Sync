@@ -1,2 +1,32 @@
+MQTT_HOST ?= 100.80.64.81
+API_URL ?= http://100.80.64.81:8080/devices/api/v1/
+MQTT_TOPIC ?= device/state
+MQTT_USER_NAME ?=smarthomeiot
+MQTT_PASSWORD ?=Smarthomeiot@123
+MQTT_PUBLISH_TOPIC ?= device/updated
+MQTT_CLIENT_ID ?= database_sync_local-000
+MQTT_TOPIC_SMARTHOME_DISCOVERY ?= smarthome/discovery
+API_KEY ?= 881373866C4845FBB8BA28D2F666AB7D
+API_AUTHORIZATION ?= Basic YXBwc21hcnRob21lOm1hNW9pYjIyN3M3MA==
+
+.PHONY: run
 run:
+	clear
+	clear
+	@echo "Starting SmartHome-Database-Sync with the following env vars:"
+	@echo "  MQTT_HOST=$(MQTT_HOST)"
+	@echo "  API_URL=$(API_URL)"
+	@echo "  MQTT_TOPIC=$(MQTT_TOPIC)"
+	@echo "  MQTT_PUBLISH_TOPIC=$(MQTT_PUBLISH_TOPIC)"
+	@echo "  MQTT_CLIENT_ID=$(MQTT_CLIENT_ID)"
+	MQTT_HOST="$(MQTT_HOST)" \
+	API_URL="$(API_URL)" \
+	MQTT_TOPIC="$(MQTT_TOPIC)" \
+	MQTT_USER_NAME="$(MQTT_USER_NAME)" \
+	MQTT_PASSWORD="$(MQTT_PASSWORD)" \
+	MQTT_PUBLISH_TOPIC="$(MQTT_PUBLISH_TOPIC)" \
+	MQTT_CLIENT_ID="$(MQTT_CLIENT_ID)" \
+	MQTT_TOPIC_SMARTHOME_DISCOVERY="$(MQTT_TOPIC_SMARTHOME_DISCOVERY)" \
+	API_KEY="$(API_KEY)" \
+	API_AUTHORIZATION="$(API_AUTHORIZATION)" \
 	node src/app/main_sync.js

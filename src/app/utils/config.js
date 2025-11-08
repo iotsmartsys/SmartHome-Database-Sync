@@ -5,8 +5,11 @@ const mqtt_topic = process.env.MQTT_TOPIC || 'device/state';
 const mqtt_user_name = process.env.MQTT_USER_NAME;
 const mqtt_password = process.env.MQTT_PASSWORD;
 const mqtt_publish_topic = process.env.MQTT_PUBLISH_TOPIC || 'device/updated';
-const mqtt_client_id = process.env.MQTT_CLIENT_ID || 'database_sync_local';
+const mqtt_client_id = process.env.MQTT_CLIENT_ID || 'database_sync_local-client';
 const mqtt_topic_discovery = process.env.MQTT_TOPIC_SMARTHOME_DISCOVERY || 'smarthome/discovery';
+
+const api_key = process.env.API_KEY || '';
+const api_authorization = process.env.API_AUTHORIZATION || '';
 
 module.exports = {
     host_name_mqtt,
@@ -17,4 +20,6 @@ module.exports = {
     mqtt_publish_topic,
     mqtt_client_id,
     mqtt_topic_discovery,
+    api_key,
+    api_authorization,
 };

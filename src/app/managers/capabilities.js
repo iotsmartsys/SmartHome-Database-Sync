@@ -1,21 +1,22 @@
 const http = require('../utils/http');
+const logger = require('../utils/logger');
 
 async function updateCapability(capabilityName, newValue, payload = {}) {
   const patchData = { capability_name: capabilityName, value: newValue };
   try {
     const url = 'capabilities';
-    console.info(`Atualizando capability '${capabilityName}' com valor: ${newValue}`);
-    console.info(`PATCH: ${http.defaults.baseURL}${url} Payload: ${JSON.stringify(patchData)}`);
-    const patchResponse = await http.patch(url, patchData);
-    console.info(`Atualizado via PATCH na API: ${capabilityName}`, patchResponse.data);
+  logger.info(`Atualizando capability '${capabilityName}' com valor: ${newValue}`);
+  logger.info(`PATCH: ${http.defaults.baseURL}${url} Payload: ${JSON.stringify(patchData)}`);
+  const patchResponse = await http.patch(url, patchData);
+  logger.info(`Atualizado via PATCH na API: ${capabilityName}`, patchResponse.data);
   } catch (err) {
     const status = err?.response?.status;
     if (status === 404) {
-      console.warn(`Capability '${capabilityName}' não encontrada (404). Tentando criar...`);
+  logger.warn(`Capability '${capabilityName}' não encontrada (404). Tentando criar...`);
       const owner_id = payload?.device_id;
       const type = payload?.type;
       if (!owner_id || !type) {
-        console.error(
+        logger.error(
           `Não foi possível criar a capability '${capabilityName}': device_id ou type ausente no payload.`,
           JSON.stringify({ owner_id, type })
         );
@@ -32,7 +33,7 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
       return;
     }
 
-    console.error(
+    logger.error(
       `Erro ao atualizar capability '${capabilityName}':`,
       err.message,
       err.response ? err.response.data : ''
@@ -50,16 +51,16 @@ async function processCapabilities(devicePayload) {
 
     try {
       const url = `capabilities/${capabilityName}`;
-      console.info(`Verificando existência da capability '${capabilityName}'...`);
-      console.info(`GET: ${http.defaults.baseURL}${url} Payload de verificação: ${JSON.stringify(devicePayload)}`);
-      await http.get(url);
-      console.log(`Capability '${capabilityName}' já existe.`);
+  logger.info(`Verificando existência da capability '${capabilityName}'...`);
+  logger.info(`GET: ${http.defaults.baseURL}${url} Payload de verificação: ${JSON.stringify(devicePayload)}`);
+  await http.get(url);
+  logger.log(`Capability '${capabilityName}' já existe.`);
     } catch (err) {
       if (err.response && err.response.status === 404) {
-        console.log(`Capability '${capabilityName}' não existe. Criando...`);
+        logger.log(`Capability '${capabilityName}' não existe. Criando...`);
         await createCapability(devicePayload.device_id, capability);
       } else {
-        console.error('Erro ao verificar existência do capability:', err.message, err.response ? err.response.data : '');
+        logger.error('Erro ao verificar existência do capability:', err.message, err.response ? err.response.data : '');
       }
     }
   }
@@ -67,7 +68,7 @@ async function processCapabilities(devicePayload) {
 
 async function createCapability(owner_id, capability) {
   if (!capability || !capability.capability_name || !capability.type) {
-    console.error('Dados inválidos para criação da capability:', capability);
+    logger.error('Dados inválidos para criação da capability:', capability);
     return;
   }
   const newCapability = {
@@ -80,11 +81,11 @@ async function createCapability(owner_id, capability) {
   const capabilities = [newCapability];
   try {
     const json = JSON.stringify(capabilities, null, 2);
-    console.log('Payload de criação da capability:', json);
+    logger.log('Payload de criação da capability:', json);
     const response = await http.post(`devices/${owner_id}/capabilities`, capabilities);
-    console.log('Capability criada com sucesso:', response.data);
+    logger.log('Capability criada com sucesso:', response.data);
   } catch (postErr) {
-    console.error('Erro ao criar capability:', postErr.message, postErr.response ? postErr.response.data : '');
+    logger.error('Erro ao criar capability:', postErr.message, postErr.response ? postErr.response.data : '');
   }
 }
 
