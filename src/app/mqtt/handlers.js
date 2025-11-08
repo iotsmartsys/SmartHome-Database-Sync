@@ -45,6 +45,10 @@ async function handleDiscoveryMessage(client, message) {
   console.info('Mensagem de discovery recebida:', message.toString());
   try {
     const devicePayload = JSON.parse(message.toString());
+    if (devicePayload.type && devicePayload.type !== 'property') {
+      await processPropertiesAsync(devicePayload);
+
+    }
     await processDiscoveryDevice(devicePayload);
     console.info('Notificando a atualização com sucesso para outros consumers');
     const capabilities = devicePayload.capabilities || [];
@@ -61,6 +65,23 @@ async function handleDiscoveryMessage(client, message) {
   }
 }
 
+async function processPropertiesAsync(properties) {
+  for (const prop of properties) {
+
+    switch (prop.property_name) {
+      case 'device_state': {
+        const device_active_date = new Date().toLocaleString('sv-SE');
+        await updateDevice(prop.device_id, [createPatch('last_active', device_active_date)]);
+        console.log(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${prop.device_id}`);
+        break;
+      }
+      default:
+        await updateProperty(prop.device_id, prop.property_name, prop.value, prop.property_name);
+        break;
+    }
+  }
+}
+
 async function handleCapabilityMessage(client, message) {
   try {
     const payload = JSON.parse(message.toString());
@@ -68,33 +89,9 @@ async function handleCapabilityMessage(client, message) {
     const newValue = payload.value;
     if (!capabilityName || newValue === undefined) return;
 
-    switch (capabilityName) {
-      case 'device_state': {
-        const device_active_date = new Date().toLocaleString('sv-SE');
-        await updateDevice(payload.device_id, [createPatch('last_active', device_active_date)]);
-        console.log(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${payload.device_id}`);
-        break;
-      }
-      case 'wifi_signal':
-        await updateProperty(payload.device_id, 'wifi_signal', newValue, 'Sinal Wi-Fi');
-        console.log(`Sinal Wi-Fi atualizado para ${newValue} no dispositivo ${payload.device_id}`);
-        break;
-      case 'wifi_ssid':
-        await updateProperty(payload.device_id, 'wifi_ssid', newValue, 'SSID Wi-Fi');
-        console.log(`SSID Wi-Fi atualizado para ${newValue} no dispositivo ${payload.device_id}`);
-        break;
-      default: {
-        if (capabilityName.includes('battery_level')) {
-          await updateProperty(payload.device_id, 'battery_level', newValue, 'Nível da Bateria');
-          console.log(`Nível da bateria atualizado para ${newValue} no dispositivo ${payload.device_id}`);
-          break;
-        }
-        await updateCapability(capabilityName, newValue, payload);
-        publishCapabilityUpdate(client, payload.device_id, capabilityName, newValue);
-        console.log(`Capability '${capabilityName}' atualizada para ${newValue} no dispositivo ${payload.device_id}`);
-        break;
-      }
-    }
+    await updateCapability(capabilityName, newValue, payload);
+    publishCapabilityUpdate(client, payload.device_id, capabilityName, newValue);
+    console.log(`Capability '${capabilityName}' atualizada para ${newValue} no dispositivo ${payload.device_id}`);
   } catch (err) {
     console.error('Erro ao processar mensagem MQTT:', err);
   }

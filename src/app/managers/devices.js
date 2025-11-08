@@ -24,14 +24,15 @@ async function processDiscoveryDevice(devicePayload) {
     await updateDevice(devicePayload.device_id, patches);
     console.info(`Dispositivo '${devicePayload.device_id}' atualizado com sucesso.`);
 
-    if (devicePayload.version) {
-      await updateProperty(devicePayload.device_id, 'version', devicePayload.version, 'Firmware Version');
+    for (const prop in devicePayload.properties) {
+      await updateProperty(
+      devicePayload.device_id,
+        prop.property_name,
+        prop.value,
+        prop.property_name 
+      );
     }
-    if (devicePayload.wifi_signal && devicePayload.wifi_ssid) {
-      await updateProperty(devicePayload.device_id, 'wifi_signal', devicePayload.wifi_signal, 'Sinal Wi-Fi');
-      await updateProperty(devicePayload.device_id, 'wifi_ssid', devicePayload.wifi_ssid, 'SSID Wi-Fi');
-      console.info(`Propriedades do dispositivo '${devicePayload.device_id}' atualizadas com sucesso.`);
-    }
+    
 
     console.info(`Dispositivo '${devicePayload.device_id}' atualizado com sucesso.`);
   } catch (err) {
@@ -72,6 +73,14 @@ async function createDevice(devicePayload) {
 function mapPayloadToCreate(devicePayload, platform) {
   const current_date = getCurrentFormatedDate();
   const mac_address = devicePayload.mac_address || '00:00:00:00:00:00';
+  const properties = [];
+  for (const prop in devicePayload.properties) {
+    properties.push({
+      name: prop.property_name,
+      description: prop.property_name,
+      value: prop.value,
+    });
+  }
   return {
     device_id: devicePayload.device_id,
     device_name: devicePayload.device_id,
@@ -82,10 +91,8 @@ function mapPayloadToCreate(devicePayload, platform) {
     ip_address: devicePayload.ip_address,
     protocol: 'MQTT',
     platform: platform,
-    wifi_signal: devicePayload.wifi_signal,
-    wifi_ssid: devicePayload.wifi_ssid,
     capabilities: [],
-    properties: [],
+    properties: properties,
     power_on: current_date,
   };
 }
