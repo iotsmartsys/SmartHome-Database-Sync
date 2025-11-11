@@ -58,8 +58,8 @@ async function handleDiscoveryMessage(client, message) {
   try {
     const devicePayload = JSON.parse(message.toString());
     if (devicePayload.type && devicePayload.type == 'property') {
-      await processPropertiesAsync(devicePayload);
-      publishCapabilityUpdate(client, devicePayload.device_id, devicePayload.capability_name, devicePayload.value);
+      await processPropertiesAsync([devicePayload]);
+      // publishCapabilityUpdate(client, devicePayload.device_id, devicePayload.capability_name, devicePayload.value);
       return;
     }
     await processDiscoveryDevice(devicePayload);
