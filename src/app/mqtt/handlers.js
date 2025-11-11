@@ -37,7 +37,6 @@ function registerHandlers(client) {
 }
 
 async function handleMessage(client, topic, message) {
-
   switch (topic) {
     case mqtt_topic:
       logger.info('Mensagem recebida no tópico principal:', message.toString());
@@ -59,11 +58,9 @@ async function handleDiscoveryMessage(client, message) {
     const devicePayload = JSON.parse(message.toString());
     if (devicePayload.type && devicePayload.type == 'property') {
       await processPropertiesAsync([devicePayload]);
-      // publishCapabilityUpdate(client, devicePayload.device_id, devicePayload.capability_name, devicePayload.value);
       return;
     }
     await processDiscoveryDevice(devicePayload);
-    publishCapabilityUpdate(client, devicePayload.device_id, devicePayload.capability_name, devicePayload.value);
     logger.info('Notificando a atualização com sucesso para outros consumers');
     const capabilities = devicePayload.capabilities || [];
     for (const capability of capabilities) {
