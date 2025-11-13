@@ -7,4 +7,4 @@ RUN npm install --production && npm cache clean --force
 
 COPY app/ ./app/
 
-CMD ["node", "app/main_sync.js"]
+CMD ["node", "app/app.js"]

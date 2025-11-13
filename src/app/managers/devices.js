@@ -33,7 +33,7 @@ async function processDiscoveryDevice(devicePayload) {
         prop.name
       );
     }
-    logger.info(`${devicePayload.properties.size()} propriedades atualizadas para o dispositivo '${devicePayload.device_id}'.`);
+    logger.info(`${devicePayload.properties.length} propriedades atualizadas para o dispositivo '${devicePayload.device_id}'.`);
 
 
     logger.info(`Atualização do dispositivo '${devicePayload.device_id}' processada com sucesso.`);
