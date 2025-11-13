@@ -54,10 +54,10 @@ async function processCapabilities(devicePayload) {
   logger.info(`Verificando existência da capability '${capabilityName}'...`);
   logger.info(`GET: ${http.defaults.baseURL}${url} Payload de verificação: ${JSON.stringify(devicePayload)}`);
   await http.get(url);
-  logger.log(`Capability '${capabilityName}' já existe.`);
+  logger.info(`Capability '${capabilityName}' já existe.`);
     } catch (err) {
       if (err.response && err.response.status === 404) {
-        logger.log(`Capability '${capabilityName}' não existe. Criando...`);
+        logger.info(`Capability '${capabilityName}' não existe. Criando...`);
         await createCapability(devicePayload.device_id, capability);
       } else {
         logger.error('Erro ao verificar existência do capability:', err.message, err.response ? err.response.data : '');
@@ -81,9 +81,9 @@ async function createCapability(owner_id, capability) {
   const capabilities = [newCapability];
   try {
     const json = JSON.stringify(capabilities, null, 2);
-    logger.log('Payload de criação da capability:', json);
+    logger.info('Payload de criação da capability:', json);
     const response = await http.post(`devices/${owner_id}/capabilities`, capabilities);
-    logger.log('Capability criada com sucesso:', response.data);
+    logger.info('Capability criada com sucesso:', response.data);
   } catch (postErr) {
     logger.error('Erro ao criar capability:', postErr.message, postErr.response ? postErr.response.data : '');
   }

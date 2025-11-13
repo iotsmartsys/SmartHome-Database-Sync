@@ -6,7 +6,7 @@ function publish(client, topic, payload) {
     if (err) {
       logger.error(`Erro ao publicar no tópico ${topic}:`, err.message);
     } else {
-      logger.log(`Mensagem publicada no tópico ${topic}`);
+      logger.info(`Mensagem publicada no tópico ${topic}`);
     }
   });
 }

@@ -11,7 +11,7 @@ function registerHandlers(client) {
     if (err) {
       logger.error('Erro ao subscrever ao tópico:', mqtt_topic, err.message);
     } else {
-      logger.log('Subscrito ao tópico:', mqtt_topic);
+      logger.info('Subscrito ao tópico:', mqtt_topic);
     }
   });
 
@@ -19,7 +19,7 @@ function registerHandlers(client) {
     if (err) {
       logger.error('Erro ao subscrever ao tópico smarthome.discovery:', err.message);
     } else {
-      logger.log(`Subscrito ao tópico ${mqtt_topic_discovery}`);
+      logger.info(`Subscrito ao tópico ${mqtt_topic_discovery}`);
     }
   });
 
@@ -83,7 +83,7 @@ async function processPropertiesAsync(properties) {
       case 'device_state': {
         const device_active_date = new Date().toLocaleString('sv-SE');
         await updateDevice(prop.device_id, [createPatch('last_active', device_active_date)]);
-        logger.log(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${prop.device_id}`);
+        logger.info(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${prop.device_id}`);
         break;
       }
       default:
@@ -103,26 +103,26 @@ async function handleCapabilityMessage(client, message) {
       case 'device_state': {
         const device_active_date = new Date().toLocaleString('sv-SE');
         await updateDevice(payload.device_id, [createPatch('last_active', device_active_date)]);
-        console.log(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${payload.device_id}`);
+        logger.log(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${payload.device_id}`);
         break;
       }
       case 'wifi_signal':
         await updateProperty(payload.device_id, 'wifi_signal', newValue, 'Sinal Wi-Fi');
-        console.log(`Sinal Wi-Fi atualizado para ${newValue} no dispositivo ${payload.device_id}`);
+        logger.log(`Sinal Wi-Fi atualizado para ${newValue} no dispositivo ${payload.device_id}`);
         break;
       case 'wifi_ssid':
         await updateProperty(payload.device_id, 'wifi_ssid', newValue, 'SSID Wi-Fi');
-        console.log(`SSID Wi-Fi atualizado para ${newValue} no dispositivo ${payload.device_id}`);
+        logger.log(`SSID Wi-Fi atualizado para ${newValue} no dispositivo ${payload.device_id}`);
         break;
       default: {
         if (capabilityName.includes('battery_level')) {
           await updateProperty(payload.device_id, 'battery_level', newValue, 'Nível da Bateria');
-          console.log(`Nível da bateria atualizado para ${newValue} no dispositivo ${payload.device_id}`);
+          logger.log(`Nível da bateria atualizado para ${newValue} no dispositivo ${payload.device_id}`);
           break;
         }
         await updateCapability(capabilityName, newValue, payload);
         publishCapabilityUpdate(client, payload.device_id, capabilityName, newValue);
-        console.log(`Capability '${capabilityName}' atualizada para ${newValue} no dispositivo ${payload.device_id}`);
+        logger.log(`Capability '${capabilityName}' atualizada para ${newValue} no dispositivo ${payload.device_id}`);
         break;
       }
     }

@@ -1,42 +1,55 @@
+const pino = require('pino');
 const correlation = require('./correlation');
 
-function prefixWithCorrelation(args) {
+const log_level = process.env.LOG_LEVEL || 'info';
+const service_name = process.env.MQTT_CLIENT_ID || 'smart-home-database-sync';
+const env = process.env.NODE_ENV || process.env.ENV || 'prod';
+
+const baseLogger = pino({
+  level: log_level,
+  base: { service: service_name, env },
+  messageKey: 'message',
+  formatters: {
+    level(label) {
+      return { level: label };
+    }
+  }
+});
+
+// Wrapper that injects correlationId (from AsyncLocalStorage) into the first meta object
+// of every log call. If the first arg is not an object (or is an Error), we prepend
+// a meta object containing the correlationId.
+const methods = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'];
+const logger = {};
+
+function injectCorrelation(args) {
   const id = correlation.getId();
   if (!id) return args;
-  const prefix = `[correlationId:${id}]`;
-  // If first arg is string, prefix it, else add prefix as first arg
-  if (typeof args[0] === 'string') {
-    args[0] = `${prefix} ${args[0]}`;
-    return args;
+
+  // If first arg is a plain object (not Error and not Array), merge correlationId
+  const first = args[0];
+  const isPlainObject = first && typeof first === 'object' && !Array.isArray(first) && !(first instanceof Error);
+  if (isPlainObject) {
+    // avoid mutating caller object
+    const meta = Object.assign({ correlationId: id }, first);
+    const rest = args.slice(1);
+    return [meta, ...rest];
   }
-  return [prefix, ...args];
+
+  // otherwise prepend a meta object
+  return [{ correlationId: id }, ...args];
 }
 
-function info(...args) {
-  console.info(...prefixWithCorrelation(args));
-}
+methods.forEach((m) => {
+  logger[m] = (...args) => baseLogger[m](...injectCorrelation(args));
+});
 
-function warn(...args) {
-  console.warn(...prefixWithCorrelation(args));
-}
+// alias log -> info for code that used logger.log
+logger.log = (...args) => baseLogger.info(...injectCorrelation(args));
 
-function error(...args) {
-  console.error(...prefixWithCorrelation(args));
-}
+// expose child and level control transparently
+logger.child = (...args) => baseLogger.child(...args);
+logger.level = baseLogger.level;
+logger.flush = baseLogger.flush ? baseLogger.flush.bind(baseLogger) : undefined;
 
-function log(...args) {
-  console.log(...prefixWithCorrelation(args));
-}
-
-function debug(...args) {
-  if (console.debug) console.debug(...prefixWithCorrelation(args));
-  else console.log(...prefixWithCorrelation(args));
-}
-
-module.exports = {
-  info,
-  warn,
-  error,
-  log,
-  debug,
-};
+module.exports = logger;
