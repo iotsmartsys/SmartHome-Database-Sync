@@ -100,9 +100,8 @@ async function handleCapabilityMessage(client, message) {
     if (!capabilityName || newValue === undefined) return;
     switch (capabilityName) {
       case 'device_state': {
-        const device_active_date = new Date().toLocaleString('sv-SE');
-        await updateDevice(payload.device_id, [createPatch('last_active', device_active_date)]);
-        logger.log(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${payload.device_id}`);
+        await updateDevice(payload.device_id, [createPatch('state', newValue)]);
+        logger.log(`Estado do dispositivo atualizado para ${newValue} no dispositivo ${payload.device_id}`);
         break;
       }
       case 'wifi_signal':
