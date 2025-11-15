@@ -81,9 +81,8 @@ async function processPropertiesAsync(properties) {
 
     switch (prop.property_name) {
       case 'device_state': {
-        const device_active_date = new Date().toLocaleString('sv-SE');
-        await updateDevice(prop.device_id, [createPatch('last_active', device_active_date)]);
-        logger.info(`Estado do dispositivo atualizado para ${device_active_date} no dispositivo ${prop.device_id}`);
+        await updateDevice(prop.device_id, [createPatch('state', prop.value)]);
+        logger.info(`Estado do dispositivo atualizado para ${prop.value} no dispositivo ${prop.device_id}`);
         break;
       }
       default:
