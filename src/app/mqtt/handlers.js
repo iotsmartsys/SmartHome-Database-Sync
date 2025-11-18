@@ -95,11 +95,13 @@ async function processPropertiesAsync(properties) {
 async function handleCapabilityMessage(client, message) {
   try {
     const payload = JSON.parse(message.toString());
+    console.log('Parsed capability message payload:', payload);
     const capabilityName = payload.capability_name;
     const newValue = payload.value;
     if (!capabilityName || newValue === undefined) return;
     switch (capabilityName) {
       case 'device_state': {
+        console.log('device_state')
         await updateDevice(payload.device_id, [createPatch('state', newValue)]);
         logger.log(`Estado do dispositivo atualizado para ${newValue} no dispositivo ${payload.device_id}`);
         break;

@@ -4,17 +4,42 @@ const correlation = require('./correlation');
 const log_level = process.env.LOG_LEVEL || 'info';
 const service_name = process.env.MQTT_CLIENT_ID || 'smart-home-database-sync';
 const env = process.env.NODE_ENV || process.env.ENV || 'prod';
+const usePretty = env !== 'production';
 
-const baseLogger = pino({
-  level: log_level,
-  base: { service: service_name, env },
-  messageKey: 'message',
-  formatters: {
-    level(label) {
-      return { level: label };
+let baseLogger;
+if (usePretty) {
+  // transporte que utiliza pino-pretty (certifique-se de instalar pino-pretty em src/app/package.json)
+  const transport = pino.transport({
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'yyyy-mm-dd HH:MM:ss.l',
+      ignore: 'pid,hostname'
     }
-  }
-});
+  });
+
+  baseLogger = pino({
+    level: log_level,
+    base: { service: service_name, env },
+    messageKey: 'message',
+    formatters: {
+      level(label) {
+        return { level: label };
+      }
+    }
+  }, transport);
+} else {
+  baseLogger = pino({
+    level: log_level,
+    base: { service: service_name, env },
+    messageKey: 'message',
+    formatters: {
+      level(label) {
+        return { level: label };
+      }
+    }
+  });
+}
 
 const methods = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'];
 const logger = {};
