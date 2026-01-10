@@ -21,6 +21,9 @@ jobs:
     permissions:
       contents: read
       packages: write  # required for GHCR
+    env:
+      PORTAINER_URL: ${{ vars.PORTAINER_URL }}
+      PORTAINER_WEBHOOK_SECRET_KEY: ${{ secrets.PORTAINER_WEBHOOK_SECRET_KEY }}
 
     steps:
       - name: Checkout
@@ -64,11 +67,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      
       - name: Notify Portainer webhook
         if: github.event_name != 'pull_request'
         run: |
           echo "Triggering Portainer webhook..."
-          curl -fsS -X POST "https://portainer.iotsmartsys.tech/api/webhooks/5e8b69e3-ad5b-4375-b033-63a7ceba0f3d" \
+
+          if [ -z "${PORTAINER_URL}" ]; then
+            echo "ERROR: PORTAINER_URL is not set. Create a Repository Variable named PORTAINER_URL (e.g., https://portainer.seu-dominio.com/api/webhooks)."
+            exit 1
+          fi
+
+          if [ -z "${PORTAINER_WEBHOOK_SECRET_KEY}" ]; then
+            echo "ERROR: PORTAINER_WEBHOOK_SECRET_KEY is not set. Create a Repository Secret named PORTAINER_WEBHOOK_SECRET_KEY (the webhook token/id from Portainer)."
+            exit 1
+          fi
+
+          # Avoid double slashes if PORTAINER_URL ends with '/'
+          WEBHOOK_URL="${PORTAINER_URL%/}/${PORTAINER_WEBHOOK_SECRET_KEY}"
+
+          curl -fsS -X POST "${WEBHOOK_URL}" \
             && echo "Webhook triggered successfully" \
             || echo "WARNING: Portainer webhook call failed (non-blocking)"
 
