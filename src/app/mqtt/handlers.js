@@ -68,6 +68,7 @@ async function handleDiscoveryMessage(client, message) {
         device_id: devicePayload.device_id,
         capability_name: capability.capability_name,
         value: capability.value,
+        type: capability.type
       };
       publish(client, mqtt_topic, toSend);
     }
