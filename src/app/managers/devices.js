@@ -5,12 +5,12 @@ const { processCapabilities } = require('./capabilities');
 const logger = require('../utils/logger');
 
 async function processDiscoveryDevice(devicePayload) {
-  logger.info(`Verificando existência do dispositivo com device_id: ${devicePayload.device_id}`);
+  logger.info({ device_id: devicePayload.device_id }, 'Verificando existência do dispositivo');
   const checkUrl = `devices/${devicePayload.device_id}`;
   try {
-    logger.info(`Verificando URL: ${http.defaults.baseURL}${checkUrl}`);
+    logger.debug({ url: checkUrl, baseURL: http.defaults.baseURL }, 'Verificando URL do dispositivo');
     await http.get(checkUrl);
-    logger.info(`Dispositivo '${devicePayload.device_id}' já existe.`);
+    logger.info({ device_id: devicePayload.device_id }, 'Dispositivo já existe');
 
     const patches = [];
     if (devicePayload.mac_address) {
@@ -18,13 +18,13 @@ async function processDiscoveryDevice(devicePayload) {
     }
     patches.push(createPatch('ip_address', devicePayload.ip_address));
     patches.push(createPatch('power_on', new Date().toLocaleString('sv-SE')));
-    logger.info(
-      `Dados do dispositivo '${devicePayload.device_id}' a serem atualizadas:`,
-      JSON.stringify(patches, null, 2)
+    logger.debug(
+      { device_id: devicePayload.device_id, patches },
+      'Patches do dispositivo a serem atualizados'
     );
     await updateDevice(devicePayload.device_id, patches);
 
-    logger.info(`Verificando propriedades do dispositivo '${devicePayload.device_id}'...`);
+    logger.info({ device_id: devicePayload.device_id }, 'Verificando propriedades do dispositivo');
     for (const prop of devicePayload.properties) {
       await updateProperty(
         devicePayload.device_id,
@@ -33,18 +33,26 @@ async function processDiscoveryDevice(devicePayload) {
         prop.name
       );
     }
-    logger.info(`${devicePayload.properties.length} propriedades atualizadas para o dispositivo '${devicePayload.device_id}'.`);
+    logger.info(
+      { device_id: devicePayload.device_id, count: devicePayload.properties.length },
+      'Propriedades atualizadas para o dispositivo'
+    );
 
 
-    logger.info(`Atualização do dispositivo '${devicePayload.device_id}' processada com sucesso.`);
+    logger.info({ device_id: devicePayload.device_id }, 'Atualizacao do dispositivo processada com sucesso');
   } catch (err) {
     if (err.response && err.response.status === 404) {
       await createDevice(devicePayload);
     } else {
       logger.error(
-        'Erro ao verificar existência do dispositivo:',
-        err.message,
-        err.response ? err.response.data : ''
+        {
+          device_id: devicePayload.device_id,
+          url: checkUrl,
+          status: err?.response?.status,
+          response: err?.response?.data,
+          err,
+        },
+        'Erro ao verificar existência do dispositivo'
       );
     }
   }
@@ -63,12 +71,23 @@ async function createDevice(devicePayload) {
 
   const newDevice = mapPayloadToCreate(devicePayload, platform);
 
-  logger.info('Payload de criação do dispositivo:', JSON.stringify(newDevice, null, 2));
+  logger.debug({ device_id: devicePayload.device_id, payload: newDevice }, 'Payload de criação do dispositivo');
   try {
     const response = await http.post('devices', newDevice);
-    logger.info('Dispositivo criado com sucesso:', response.data);
+    logger.info(
+      { device_id: devicePayload.device_id, status: response.status, response: response.data },
+      'Dispositivo criado com sucesso'
+    );
   } catch (postErr) {
-    logger.error('Erro ao criar dispositivo:', postErr.message, postErr.response ? postErr.response.data : '');
+    logger.error(
+      {
+        device_id: devicePayload.device_id,
+        status: postErr?.response?.status,
+        response: postErr?.response?.data,
+        err: postErr,
+      },
+      'Erro ao criar dispositivo'
+    );
   }
 }
 
@@ -104,12 +123,23 @@ function createPatch(name, value) {
 }
 
 async function updateDevice(device_id, properties) {
-  logger.info(`Payload de atualização do dispositivo ${device_id}:`, JSON.stringify(properties, null, 2));
+  logger.debug({ device_id, patches: properties }, 'Payload de atualizacao do dispositivo');
   try {
     const response = await http.patch(`devices/${device_id}`, properties);
-    logger.info('Dispositivo atualizado com sucesso:', response.data);
+    logger.info(
+      { device_id, status: response.status, response: response.data },
+      'Dispositivo atualizado com sucesso'
+    );
   } catch (err) {
-    logger.error('Erro ao atualizar dispositivo:', err.message, err.response ? err.response.data : '');
+    logger.error(
+      {
+        device_id,
+        status: err?.response?.status,
+        response: err?.response?.data,
+        err,
+      },
+      'Erro ao atualizar dispositivo'
+    );
   }
 }
 
@@ -120,13 +150,28 @@ async function updateProperty(device_id, property_name, value, description) {
     value: value,
   };
 
-  logger.info(`Payload de atualização das properties do device_id ${device_id}:`, JSON.stringify(updatePayload, null, 2));
+  logger.debug(
+    { device_id, property_name, value, description, payload: updatePayload },
+    'Payload de atualizacao da propriedade'
+  );
 
   try {
     const response = await http.put(`devices/${device_id}/properties`, updatePayload);
-    logger.info('Propriedade atualizada com sucesso:', response.data);
+    logger.info(
+      { device_id, property_name, status: response.status, response: response.data },
+      'Propriedade atualizada com sucesso'
+    );
   } catch (err) {
-    logger.error('Erro ao atualizar propriedade:', err.message, err.response ? err.response.data : '');
+    logger.error(
+      {
+        device_id,
+        property_name,
+        status: err?.response?.status,
+        response: err?.response?.data,
+        err,
+      },
+      'Erro ao atualizar propriedade'
+    );
   }
 }
 
@@ -137,4 +182,3 @@ module.exports = {
   updateProperty,
   createPatch,
 };
-
