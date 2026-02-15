@@ -16,11 +16,12 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
     const status = err?.response?.status;
     if (status === 404) {
       logger.warn({ capabilityName }, 'Capability não encontrada (404). Tentando criar');
-      const owner_id = payload?.device_id;
+      const device_id = payload?.device_id;
+      const owner = payload?.owner || device_id;
       const type = payload?.type;
-      if (!owner_id || !type) {
+      if (!device_id || !type) {
         logger.error(
-          { capabilityName, owner_id, type },
+          { capabilityName, owner_id: device_id, type },
           'Não foi possível criar a capability: device_id ou type ausente no payload'
         );
         return;
@@ -31,8 +32,9 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
         description: capabilityName,
         type,
         value: newValue,
+        owner,
       };
-      await createCapability(owner_id, capabilityToCreate);
+      await createCapability(device_id, capabilityToCreate);
       return;
     }
 
@@ -89,35 +91,37 @@ async function processCapabilities(devicePayload) {
   }
 }
 
-async function createCapability(owner_id, capability) {
+async function createCapability(device_id, capability) {
   if (!capability || !capability.capability_name || !capability.type) {
-    logger.error({ owner_id, capability }, 'Dados inválidos para criação da capability');
+    logger.error({ device_id: device_id, capability }, 'Dados inválidos para criação da capability');
     return;
   }
+
+  var owner = capability.owner || device_id;
   const newCapability = {
-    capability_name: capability.capability_name,
+    capability_name: capability.capability_name,  
     description: capability.description || capability.capability_name,
-    owner: owner_id,
-    device_id: owner_id,
+    owner: owner,
+    device_id: device_id,
     type: capability.type,
     value: capability.value || '',
   };
   const capabilities = [newCapability];
   try {
     logger.info(
-      { owner_id, capabilityName: capability.capability_name, type: capability.type },
+      { owner_id: device_id, capabilityName: capability.capability_name, type: capability.type },
       'Criando capability'
     );
-    logger.debug({ owner_id, capabilities }, 'Payload de criação da capability');
-    const response = await http.post(`devices/${owner_id}/capabilities`, capabilities);
+    logger.debug({ owner_id: device_id, capabilities }, 'Payload de criação da capability');
+    const response = await http.post(`devices/${device_id}/capabilities`, capabilities);
     logger.info(
-      { owner_id, capabilityName: capability.capability_name, status: response.status, response: response.data },
+      { owner_id: device_id, capabilityName: capability.capability_name, status: response.status, response: response.data },
       'Capability criada com sucesso'
     );
   } catch (postErr) {
     logger.error(
       {
-        owner_id,
+        owner_id: device_id,
         capabilityName: capability.capability_name,
         message: postErr.message,
         response: postErr.response ? postErr.response.data : undefined,
