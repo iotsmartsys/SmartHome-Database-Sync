@@ -3,7 +3,7 @@ const correlation = require('./correlation');
 
 const log_level = process.env.LOG_LEVEL || 'info';
 const service_name = process.env.MQTT_CLIENT_ID || 'smart-home-database-sync';
-const env = process.env.NODE_ENV || process.env.ENV || 'prod';
+const env = process.env.NODE_ENV || process.env.ENV || 'development';
 const usePretty = env !== 'production';
 
 let baseLogger;

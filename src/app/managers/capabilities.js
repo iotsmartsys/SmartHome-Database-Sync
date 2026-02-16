@@ -12,6 +12,7 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
       { capabilityName, status: patchResponse.status, response: patchResponse.data },
       'Capability atualizada via API'
     );
+    return { action: 'updated' };
   } catch (err) {
     const status = err?.response?.status;
     if (status === 404) {
@@ -24,7 +25,7 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
           { capabilityName, owner_id: device_id, type },
           'Não foi possível criar a capability: device_id ou type ausente no payload'
         );
-        return;
+        return { action: 'create_skipped' };
       }
 
       const capabilityToCreate = {
@@ -34,8 +35,25 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
         value: newValue,
         owner,
       };
-      await createCapability(device_id, capabilityToCreate);
-      return;
+      const createResult = await createCapability(device_id, capabilityToCreate);
+      if (createResult?.ok) {
+        return { action: 'created' };
+      }
+
+      if (
+        createResult?.status === 404 &&
+        isZigbeeDeviceId(device_id) &&
+        isDeviceNotFoundResponse(createResult?.response)
+      ) {
+        const discoveryPayload = buildZigbeeDiscoveryPayload(device_id);
+        logger.warn(
+          { device_id, capabilityName, discoveryPayload },
+          'Device Zigbee inexistente. Solicitação de discovery montada'
+        );
+        return { action: 'discovery_required', discoveryPayload };
+      }
+
+      return { action: 'create_failed' };
     }
 
     logger.error(
@@ -48,6 +66,7 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
       },
       'Erro ao atualizar capability'
     );
+    return { action: 'update_failed' };
   }
 }
 
@@ -94,7 +113,7 @@ async function processCapabilities(devicePayload) {
 async function createCapability(device_id, capability) {
   if (!capability || !capability.capability_name || !capability.type) {
     logger.error({ device_id: device_id, capability }, 'Dados inválidos para criação da capability');
-    return;
+    return { ok: false, status: null, response: 'invalid capability payload' };
   }
 
   var owner = capability.owner || device_id;
@@ -118,6 +137,7 @@ async function createCapability(device_id, capability) {
       { owner_id: device_id, capabilityName: capability.capability_name, status: response.status, response: response.data },
       'Capability criada com sucesso'
     );
+    return { ok: true, status: response.status, response: response.data };
   } catch (postErr) {
     logger.error(
       {
@@ -129,7 +149,60 @@ async function createCapability(device_id, capability) {
       },
       'Erro ao criar capability'
     );
+    return {
+      ok: false,
+      status: postErr?.response?.status || null,
+      response: postErr?.response?.data,
+    };
   }
+}
+
+function isZigbeeDeviceId(device_id = '') {
+  return /^zigbee-/i.test(device_id);
+}
+
+function isDeviceNotFoundResponse(response) {
+  if (typeof response === 'string') {
+    return /not found/i.test(response);
+  }
+  if (response && typeof response === 'object') {
+    return /not found/i.test(JSON.stringify(response));
+  }
+  return false;
+}
+
+function buildZigbeeDiscoveryPayload(device_id) {
+  return {
+    device_id,
+    device_name: device_id,
+    description: device_id,
+    last_active: getFormattedNow(),
+    state: 'online',
+    mac_address: normalizeMacAddress(device_id.replace(/^zigbee-/i, '')),
+    ip_address: 'Zigbee',
+    protocol: 'Zigbee',
+    platform: 'Zigbee',
+    capabilities: [],
+    properties: [],
+  };
+}
+
+function normalizeMacAddress(rawValue = '') {
+  const hex = rawValue.replace(/[^a-fA-F0-9]/g, '').toUpperCase();
+  if (!hex) return '';
+  const pairs = hex.match(/.{1,2}/g) || [];
+  return pairs.join(':');
+}
+
+function getFormattedNow() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
 module.exports = {

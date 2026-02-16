@@ -174,7 +174,14 @@ async function handleCapabilityMessage(client, message) {
           );
           break;
         }
-        await updateCapability(capabilityName, newValue, payload);
+        const updateResult = await updateCapability(capabilityName, newValue, payload);
+        if (updateResult?.action === 'discovery_required' && updateResult?.discoveryPayload) {
+          publish(client, mqtt_topic_discovery, updateResult.discoveryPayload);
+          logger.info(
+            { device_id: payload.device_id, capabilityName },
+            'Payload de discovery Zigbee publicado por device inexistente'
+          );
+        }
         publishCapabilityUpdate(client, payload.device_id, capabilityName, newValue);
         logger.info(
           { device_id: payload.device_id, capabilityName, value: newValue },
