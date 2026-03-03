@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
 async function updateCapability(capabilityName, newValue, payload = {}) {
   const patchData = { capability_name: capabilityName, value: newValue };
   try {
-    const url = 'capabilities';
+    const url = `devices/${payload.device_id}/capabilities/value`;
     logger.info({ capabilityName, newValue }, 'Atualizando capability');
     logger.debug({ url, baseURL: http.defaults.baseURL, patchData }, 'Enviando PATCH de capability');
     const patchResponse = await http.patch(url, patchData);
@@ -79,11 +79,13 @@ async function processCapabilities(devicePayload) {
   for (const capability of capabilities) {
     const capabilityName = capability.capability_name;
     const newValue = capability.value;
+    const device_id = devicePayload.device_id;
 
-    if (!capabilityName || newValue === undefined) continue;
+    if (!capabilityName || newValue === undefined)
+      continue;
 
     try {
-      const url = `capabilities/${capabilityName}`;
+      const url = `devices/${device_id}/capabilities/${encodeURIComponent(capabilityName)}`;
       logger.debug(
         { capabilityName, url, baseURL: http.defaults.baseURL, device_id: devicePayload.device_id },
         'Verificando existência da capability'
@@ -118,7 +120,7 @@ async function createCapability(device_id, capability) {
 
   var owner = capability.owner || device_id;
   const newCapability = {
-    capability_name: capability.capability_name,  
+    capability_name: capability.capability_name,
     description: capability.description || capability.capability_name,
     owner: owner,
     device_id: device_id,
