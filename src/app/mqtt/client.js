@@ -9,6 +9,17 @@ const {
 } = require('../utils/config');
 const logger = require('../utils/logger');
 
+function createConnectionLogContext(options) {
+  return {
+    host: options.host,
+    port: options.port,
+    protocol: options.protocol,
+    clientId: options.clientId,
+    rejectUnauthorized: options.rejectUnauthorized,
+    authenticated: Boolean(options.username),
+  };
+}
+
 function createClient() {
   const options = {
     host: host_name_mqtt,
@@ -17,16 +28,19 @@ function createClient() {
     username: mqtt_user_name,
     password: mqtt_password,
     clientId: mqtt_client_id,
-    rejectUnauthorized: mqtt_protocol === "mqtts" // valida o certificado do servidor
+    rejectUnauthorized: mqtt_protocol === 'mqtts', // valida o certificado do servidor
   };
-  logger.info("Configurações MQTT:", options);
+  logger.info(
+    createConnectionLogContext(options),
+    'Configurações MQTT carregadas'
+  );
   const client = mqtt.connect(options);
 
   client.on('connect', () => {
     logger.info('Conectado ao MQTT com autenticação');
   });
   client.on('error', (err) => {
-    logger.error('Erro no cliente MQTT:', err);
+    logger.error({ err }, 'Erro no cliente MQTT');
   });
   client.on('offline', () => {
     logger.info('Cliente MQTT está offline');
@@ -38,5 +52,4 @@ function createClient() {
   return client;
 }
 
-module.exports = { createClient };
-
+module.exports = { createClient, createConnectionLogContext };

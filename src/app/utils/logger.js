@@ -6,6 +6,32 @@ const service_name = process.env.MQTT_CLIENT_ID || 'smart-home-database-sync';
 const env = process.env.NODE_ENV || process.env.ENV || 'development';
 const usePretty = env !== 'production';
 
+const loggerOptions = {
+  level: log_level,
+  base: { service: service_name, env },
+  messageKey: 'message',
+  redact: {
+    paths: [
+      'password',
+      'mqtt_password',
+      'authorization',
+      'api_authorization',
+      'api_key',
+      '*.password',
+      '*.mqtt_password',
+      '*.authorization',
+      '*.api_authorization',
+      '*.api_key',
+    ],
+    censor: '[REDACTED]',
+  },
+  formatters: {
+    level(label) {
+      return { level: label };
+    },
+  },
+};
+
 let baseLogger;
 if (usePretty) {
   // transporte que utiliza pino-pretty (certifique-se de instalar pino-pretty em src/app/package.json)
@@ -18,27 +44,9 @@ if (usePretty) {
     }
   });
 
-  baseLogger = pino({
-    level: log_level,
-    base: { service: service_name, env },
-    messageKey: 'message',
-    formatters: {
-      level(label) {
-        return { level: label };
-      }
-    }
-  }, transport);
+  baseLogger = pino(loggerOptions, transport);
 } else {
-  baseLogger = pino({
-    level: log_level,
-    base: { service: service_name, env },
-    messageKey: 'message',
-    formatters: {
-      level(label) {
-        return { level: label };
-      }
-    }
-  });
+  baseLogger = pino(loggerOptions);
 }
 
 const methods = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'];

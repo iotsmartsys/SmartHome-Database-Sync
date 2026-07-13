@@ -1,10 +1,16 @@
 const http = require('../utils/http');
 const logger = require('../utils/logger');
+const { getCurrentFormattedDate } = require('../utils/date');
 
 async function updateCapability(capabilityName, newValue, payload = {}) {
+  const deviceId = payload?.device_id;
+  if (!isValidDeviceId(deviceId)) {
+    logger.error({ capabilityName }, 'Não foi possível atualizar a capability: device_id ausente');
+    return { action: 'update_skipped' };
+  }
   const patchData = { capability_name: capabilityName, value: newValue };
   try {
-    const url = `devices/${payload.device_id}/capabilities/value`;
+    const url = `devices/${encodeURIComponent(deviceId)}/capabilities/value`;
     logger.info({ capabilityName, newValue }, 'Atualizando capability');
     logger.debug({ url, baseURL: http.defaults.baseURL, patchData }, 'Enviando PATCH de capability');
     const patchResponse = await http.patch(url, patchData);
@@ -17,12 +23,11 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
     const status = err?.response?.status;
     if (status === 404) {
       logger.warn({ capabilityName }, 'Capability não encontrada (404). Tentando criar');
-      const device_id = payload?.device_id;
-      const owner = payload?.owner || device_id;
+      const owner = payload?.owner || deviceId;
       const type = payload?.type;
-      if (!device_id || !type) {
+      if (!type) {
         logger.error(
-          { capabilityName, owner_id: device_id, type },
+          { capabilityName, owner_id: deviceId, type },
           'Não foi possível criar a capability: device_id ou type ausente no payload'
         );
         return { action: 'create_skipped' };
@@ -35,19 +40,19 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
         value: newValue,
         owner,
       };
-      const createResult = await createCapability(device_id, capabilityToCreate);
+      const createResult = await createCapability(deviceId, capabilityToCreate);
       if (createResult?.ok) {
         return { action: 'created' };
       }
 
       if (
         createResult?.status === 404 &&
-        isZigbeeDeviceId(device_id) &&
+        isZigbeeDeviceId(deviceId) &&
         isDeviceNotFoundResponse(createResult?.response)
       ) {
-        const discoveryPayload = buildZigbeeDiscoveryPayload(device_id);
+        const discoveryPayload = buildZigbeeDiscoveryPayload(deviceId);
         logger.warn(
-          { device_id, capabilityName, discoveryPayload },
+          { device_id: deviceId, capabilityName, discoveryPayload },
           'Device Zigbee inexistente. Solicitação de discovery montada'
         );
         return { action: 'discovery_required', discoveryPayload };
@@ -71,6 +76,11 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
 }
 
 async function processCapabilities(devicePayload) {
+  const deviceId = devicePayload?.device_id;
+  if (!isValidDeviceId(deviceId)) {
+    logger.error('Não foi possível processar capabilities: device_id ausente');
+    return;
+  }
   const capabilities = devicePayload.capabilities || [];
   logger.info(
     { device_id: devicePayload.device_id, count: capabilities.length },
@@ -79,28 +89,26 @@ async function processCapabilities(devicePayload) {
   for (const capability of capabilities) {
     const capabilityName = capability.capability_name;
     const newValue = capability.value;
-    const device_id = devicePayload.device_id;
-
     if (!capabilityName || newValue === undefined)
       continue;
 
     try {
-      const url = `devices/${device_id}/capabilities/${encodeURIComponent(capabilityName)}`;
+      const url = `devices/${encodeURIComponent(deviceId)}/capabilities/${encodeURIComponent(capabilityName)}`;
       logger.debug(
-        { capabilityName, url, baseURL: http.defaults.baseURL, device_id: devicePayload.device_id },
+        { capabilityName, url, baseURL: http.defaults.baseURL, device_id: deviceId },
         'Verificando existência da capability'
       );
       await http.get(url);
-      logger.info({ capabilityName, device_id: devicePayload.device_id }, 'Capability já existe');
+      logger.info({ capabilityName, device_id: deviceId }, 'Capability já existe');
     } catch (err) {
       if (err.response && err.response.status === 404) {
-        logger.info({ capabilityName, device_id: devicePayload.device_id }, 'Capability não existe. Criando');
-        await createCapability(devicePayload.device_id, capability);
+        logger.info({ capabilityName, device_id: deviceId }, 'Capability não existe. Criando');
+        await createCapability(deviceId, capability);
       } else {
         logger.error(
           {
             capabilityName,
-            device_id: devicePayload.device_id,
+            device_id: deviceId,
             message: err.message,
             response: err.response ? err.response.data : undefined,
             err,
@@ -112,38 +120,38 @@ async function processCapabilities(devicePayload) {
   }
 }
 
-async function createCapability(device_id, capability) {
-  if (!capability || !capability.capability_name || !capability.type) {
-    logger.error({ device_id: device_id, capability }, 'Dados inválidos para criação da capability');
+async function createCapability(deviceId, capability) {
+  if (!isValidDeviceId(deviceId) || !capability || !capability.capability_name || !capability.type) {
+    logger.error({ device_id: deviceId, capability }, 'Dados inválidos para criação da capability');
     return { ok: false, status: null, response: 'invalid capability payload' };
   }
 
-  var owner = capability.owner || device_id;
+  const owner = capability.owner || deviceId;
   const newCapability = {
     capability_name: capability.capability_name,
     description: capability.description || capability.capability_name,
-    owner: owner,
-    device_id: device_id,
+    owner,
+    device_id: deviceId,
     type: capability.type,
-    value: capability.value || '',
+    value: capability.value ?? '',
   };
   const capabilities = [newCapability];
   try {
     logger.info(
-      { owner_id: device_id, capabilityName: capability.capability_name, type: capability.type },
+      { owner_id: deviceId, capabilityName: capability.capability_name, type: capability.type },
       'Criando capability'
     );
-    logger.debug({ owner_id: device_id, capabilities }, 'Payload de criação da capability');
-    const response = await http.post(`devices/${device_id}/capabilities`, capabilities);
+    logger.debug({ owner_id: deviceId, capabilities }, 'Payload de criação da capability');
+    const response = await http.post(`devices/${encodeURIComponent(deviceId)}/capabilities`, capabilities);
     logger.info(
-      { owner_id: device_id, capabilityName: capability.capability_name, status: response.status, response: response.data },
+      { owner_id: deviceId, capabilityName: capability.capability_name, status: response.status, response: response.data },
       'Capability criada com sucesso'
     );
     return { ok: true, status: response.status, response: response.data };
   } catch (postErr) {
     logger.error(
       {
-        owner_id: device_id,
+        owner_id: deviceId,
         capabilityName: capability.capability_name,
         message: postErr.message,
         response: postErr.response ? postErr.response.data : undefined,
@@ -159,8 +167,8 @@ async function createCapability(device_id, capability) {
   }
 }
 
-function isZigbeeDeviceId(device_id = '') {
-  return /^zigbee-/i.test(device_id);
+function isZigbeeDeviceId(deviceId = '') {
+  return /^zigbee-/i.test(deviceId);
 }
 
 function isDeviceNotFoundResponse(response) {
@@ -173,14 +181,14 @@ function isDeviceNotFoundResponse(response) {
   return false;
 }
 
-function buildZigbeeDiscoveryPayload(device_id) {
+function buildZigbeeDiscoveryPayload(deviceId) {
   return {
-    device_id,
-    device_name: device_id,
-    description: device_id,
-    last_active: getFormattedNow(),
+    device_id: deviceId,
+    device_name: deviceId,
+    description: deviceId,
+    last_active: getCurrentFormattedDate(),
     state: 'online',
-    mac_address: normalizeMacAddress(device_id.replace(/^zigbee-/i, '')),
+    mac_address: normalizeMacAddress(deviceId.replace(/^zigbee-/i, '')),
     ip_address: 'Zigbee',
     protocol: 'Zigbee',
     platform: 'Zigbee',
@@ -196,18 +204,13 @@ function normalizeMacAddress(rawValue = '') {
   return pairs.join(':');
 }
 
-function getFormattedNow() {
-  const now = new Date();
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const year = now.getFullYear();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+function isValidDeviceId(deviceId) {
+  return typeof deviceId === 'string' && deviceId.trim() !== '';
 }
 
 module.exports = {
   updateCapability,
   processCapabilities,
+  createCapability,
+  buildZigbeeDiscoveryPayload,
 };
