@@ -1,4 +1,4 @@
-const { mqtt_topic, mqtt_topic_discovery } = require('../utils/config');
+const { mqtt_topic, mqtt_topic_discovery, mqtt_topic_metrics } = require('../utils/config');
 const { publish, publishCapabilityUpdate } = require('./publisher');
 const correlation = require('../utils/correlation');
 const logger = require('../utils/logger');
@@ -9,7 +9,11 @@ const { createMqttEventPublisher } = require('../interfaces/mqtt/event-publisher
 const payloadValidator = require('../interfaces/mqtt/payload-validator');
 
 const defaultApplication = createApplication({ deviceApi, logger });
-const defaultTopics = { capability: mqtt_topic, discovery: mqtt_topic_discovery };
+const defaultTopics = {
+  capability: mqtt_topic,
+  discovery: mqtt_topic_discovery,
+  metrics: mqtt_topic_metrics,
+};
 
 function createHandlers({
   application = defaultApplication,
@@ -50,18 +54,25 @@ function createHandlers({
     return result;
   }
 
+  async function handleMetricsMessage(_client, message) {
+    const payload = validator.validateMetricsPayload(validator.parseJsonMessage(message));
+    return application.processDeviceMetrics(payload);
+  }
+
   const router = createMessageRouter({
     topics,
     logger: appLogger,
     handlers: {
       capability: handleCapabilityMessage,
       discovery: handleDiscoveryMessage,
+      metrics: handleMetricsMessage,
     },
   });
 
   function registerHandlers(client) {
     subscribe(client, topics.capability, appLogger);
     subscribe(client, topics.discovery, appLogger);
+    subscribe(client, topics.metrics, appLogger);
     client.on('message', (topic, message) => {
       correlationContext.runWithId(correlationContext.generateId(), async () => {
         try {
@@ -81,6 +92,7 @@ function createHandlers({
     handleMessage: router.route,
     handleDiscoveryMessage,
     handleCapabilityMessage,
+    handleMetricsMessage,
   };
 }
 

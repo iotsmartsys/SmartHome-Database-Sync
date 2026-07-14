@@ -92,3 +92,52 @@ test('caso de uso de propriedade trata device_state como patch de dispositivo', 
   assert.deepEqual(patches, [{ op: 'replace', path: 'state', value: 'online' }]);
   assert.equal(result.action, 'device_updated');
 });
+
+test('caso de uso de métricas converte o payload MQTT para o contrato da API', async () => {
+  let persisted;
+  const application = createApplication({
+    logger: createLogger(),
+    deviceApi: {
+      createDeviceMetrics: async (deviceId, metrics) => {
+        persisted = { deviceId, metrics };
+        return { status: 204 };
+      },
+    },
+  });
+
+  const result = await application.processDeviceMetrics({
+    device_id: 'esp32c6-FFFE17',
+    uptime_ms: 432758344,
+    cpu_cores: 1,
+    cpu_percent: 99.8,
+    memory_percent: 34.9,
+    temperature_c: 52.6,
+    frequency_mhz: 160,
+    network: {
+      rssi: -46,
+      last_desconnected: 176666,
+      desconnected_rason: 0,
+      connection_count: 2,
+    },
+  });
+
+  assert.deepEqual(persisted, {
+    deviceId: 'esp32c6-FFFE17',
+    metrics: {
+      device_id: 'esp32c6-FFFE17',
+      uptime_ms: 432758344,
+      cpu_cores: 1,
+      cpu_percent: 99.8,
+      memory_percent: 34.9,
+      temperature_c: 52.6,
+      frequency_mhz: 160,
+      network: {
+        rssi: -46,
+        last_disconnection_uptime_ms: 176666,
+        disconnection_reason: 0,
+        connection_count: 2,
+      },
+    },
+  });
+  assert.deepEqual(result, { action: 'device_metrics_persisted' });
+});

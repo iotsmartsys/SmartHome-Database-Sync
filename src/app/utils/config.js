@@ -16,6 +16,7 @@ function createConfig(env = process.env) {
     mqtt_topic: env.MQTT_TOPIC || 'device/state',
     mqtt_publish_topic: env.MQTT_PUBLISH_TOPIC || 'device/updated',
     mqtt_topic_discovery: env.MQTT_TOPIC_SMARTHOME_DISCOVERY || 'smarthome/discovery',
+    mqtt_topic_metrics: env.MQTT_TOPIC_METRICS || 'device/metrics',
     api_url: env.API_URL,
     api_key: env.API_KEY || '',
     api_authorization: env.API_AUTHORIZATION || '',
@@ -49,6 +50,7 @@ function validateConfig(config) {
     ['MQTT_TOPIC', config.mqtt_topic],
     ['MQTT_PUBLISH_TOPIC', config.mqtt_publish_topic],
     ['MQTT_TOPIC_SMARTHOME_DISCOVERY', config.mqtt_topic_discovery],
+    ['MQTT_TOPIC_METRICS', config.mqtt_topic_metrics],
     ['MQTT_CLIENT_ID', config.mqtt_client_id],
   ]) {
     if (!isNonEmptyString(value)) errors.push(`${name} não pode ser vazio`);

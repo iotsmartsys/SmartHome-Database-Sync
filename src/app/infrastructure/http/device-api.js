@@ -63,6 +63,14 @@ function createDeviceApi(httpClient = defaultHttpClient) {
         { deviceId, capabilityName: capabilities[0]?.capability_name },
       );
     },
+
+    createDeviceMetrics(deviceId, metrics) {
+      return request(
+        () => httpClient.post(`devices/${encodeURIComponent(deviceId)}/metrics`, metrics),
+        'Erro ao persistir métricas do dispositivo',
+        { deviceId },
+      );
+    },
   };
 }
 

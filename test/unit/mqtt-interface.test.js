@@ -70,3 +70,39 @@ test('handler usa a aplicação injetada', async () => {
   );
   assert.deepEqual(payload, { device_id: 'device-01', capability_name: 'on_off', value: true });
 });
+
+test('handler de métricas encaminha payload validado para a aplicação', async () => {
+  let payload;
+  const handlers = createHandlers({
+    topics: {
+      capability: 'capability/topic',
+      discovery: 'discovery/topic',
+      metrics: 'device/metrics',
+    },
+    appLogger: { info() {}, warn() {}, error() {} },
+    application: {
+      processDeviceMetrics: async (receivedPayload) => {
+        payload = receivedPayload;
+        return { action: 'device_metrics_persisted' };
+      },
+    },
+  });
+  const message = {
+    device_id: 'esp32c6-FFFE17',
+    uptime_ms: 432758344,
+    cpu_cores: 1,
+    cpu_percent: 99.8,
+    memory_percent: 34.9,
+    temperature_c: 52.6,
+    frequency_mhz: 160,
+    network: {
+      rssi: -46,
+      last_desconnected: 176666,
+      desconnected_rason: 0,
+      connection_count: 2,
+    },
+  };
+
+  await handlers.handleMessage({}, 'device/metrics', Buffer.from(JSON.stringify(message)));
+  assert.deepEqual(payload, message);
+});

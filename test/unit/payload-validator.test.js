@@ -6,6 +6,7 @@ const {
   parseJsonMessage,
   validateCapabilityPayload,
   validateDiscoveryPayload,
+  validateMetricsPayload,
   MAX_MESSAGE_BYTES,
 } = require('../../src/app/interfaces/mqtt/payload-validator');
 const { createHandlers } = require('../../src/app/mqtt/handlers');
@@ -79,4 +80,36 @@ test('handler não chama a aplicação com payload MQTT inválido', async () => 
     ValidationError,
   );
   assert.equal(called, false);
+});
+
+test('validador de métricas aceita o contrato MQTT e rejeita campos numéricos inválidos', () => {
+  const payload = {
+    device_id: 'esp32c6-FFFE17',
+    uptime_ms: 432758344,
+    cpu_cores: 1,
+    cpu_percent: 99.8,
+    memory_percent: 34.9,
+    temperature_c: 52.6,
+    frequency_mhz: 160,
+    network: {
+      rssi: -46,
+      last_desconnected: 176666,
+      desconnected_rason: 0,
+      connection_count: 2,
+    },
+  };
+
+  assert.equal(validateMetricsPayload(payload), payload);
+  assert.throws(
+    () => validateMetricsPayload({ ...payload, uptime_ms: 1.5 }),
+    /uptime_ms deve ser um número inteiro seguro/,
+  );
+  assert.throws(
+    () => validateMetricsPayload({ ...payload, cpu_percent: '99.8' }),
+    /cpu_percent deve ser um número finito/,
+  );
+  assert.throws(
+    () => validateMetricsPayload({ ...payload, network: undefined }),
+    /network deve ser um objeto/,
+  );
 });

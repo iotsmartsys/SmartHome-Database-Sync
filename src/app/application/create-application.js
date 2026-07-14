@@ -3,6 +3,7 @@ const { getPlatformFromDeviceId } = require('../utils/platform');
 const { createProcessPropertyUpdate } = require('./process-property-update');
 const { createProcessCapabilityUpdate } = require('./process-capability-update');
 const { createProcessDiscovery } = require('./process-discovery');
+const { createProcessDeviceMetrics } = require('./process-device-metrics');
 
 function createApplication({
   deviceApi,
@@ -26,6 +27,7 @@ function createApplication({
       platformResolver,
       logger,
     }),
+    processDeviceMetrics: createProcessDeviceMetrics({ deviceApi, logger }),
   };
 }
 

@@ -31,6 +31,7 @@ test('deviceApi centraliza método, URL e codificação de identificadores', asy
   await api.getCapability('device/01', 'switch/on');
   await api.updateCapabilityValue('device/01', { capability_name: 'switch/on', value: true });
   await api.createCapabilities('device/01', [{ capability_name: 'switch/on', type: 'boolean' }]);
+  await api.createDeviceMetrics('device/01', { device_id: 'device/01' });
 
   assert.deepEqual(
     calls.map(({ method, url }) => ({ method, url })),
@@ -41,6 +42,7 @@ test('deviceApi centraliza método, URL e codificação de identificadores', asy
       { method: 'get', url: 'devices/device%2F01/capabilities/switch%2Fon' },
       { method: 'patch', url: 'devices/device%2F01/capabilities/value' },
       { method: 'post', url: 'devices/device%2F01/capabilities' },
+      { method: 'post', url: 'devices/device%2F01/metrics' },
     ],
   );
 });

@@ -2,6 +2,7 @@ function createMessageRouter({ topics, handlers, logger }) {
   const routes = new Map([
     [topics.capability, handlers.capability],
     [topics.discovery, handlers.discovery],
+    [topics.metrics, handlers.metrics],
   ]);
 
   return {
