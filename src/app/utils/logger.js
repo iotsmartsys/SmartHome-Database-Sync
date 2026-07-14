@@ -1,14 +1,12 @@
 const pino = require('pino');
 const correlation = require('./correlation');
+const { log_level, service_name, environment } = require('./config');
 
-const log_level = process.env.LOG_LEVEL || 'info';
-const service_name = process.env.MQTT_CLIENT_ID || 'smart-home-database-sync';
-const env = process.env.NODE_ENV || process.env.ENV || 'development';
-const usePretty = env !== 'production';
+const usePretty = environment !== 'production';
 
 const loggerOptions = {
   level: log_level,
-  base: { service: service_name, env },
+  base: { service: service_name, env: environment },
   messageKey: 'message',
   redact: {
     paths: [
@@ -34,7 +32,7 @@ const loggerOptions = {
 
 let baseLogger;
 if (usePretty) {
-  // transporte que utiliza pino-pretty (certifique-se de instalar pino-pretty em src/app/package.json)
+  // Transporte legível para desenvolvimento; pino-pretty é uma dependência de desenvolvimento.
   const transport = pino.transport({
     target: 'pino-pretty',
     options: {

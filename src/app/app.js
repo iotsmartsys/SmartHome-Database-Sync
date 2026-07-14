@@ -1,7 +1,9 @@
 const { createClient } = require('./mqtt/client');
 const { registerHandlers } = require('./mqtt/handlers');
+const config = require('./utils/config');
 
 function start() {
+  config.validateConfig(config);
   const client = createClient();
   registerHandlers(client);
   return client;
@@ -13,4 +15,3 @@ if (require.main === module) {
 }
 
 module.exports = { start };
-

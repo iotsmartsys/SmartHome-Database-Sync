@@ -1,29 +1,86 @@
+const ALLOWED_MQTT_PROTOCOLS = new Set(['mqtt', 'mqtts', 'ws', 'wss']);
 
-const host_name_mqtt = process.env.MQTT_HOST;
-const api_url = process.env.API_URL;
-const mqtt_topic = process.env.MQTT_TOPIC || 'device/state';
-const mqtt_user_name = process.env.MQTT_USER_NAME;
-const mqtt_password = process.env.MQTT_PASSWORD;
-const mqtt_publish_topic = process.env.MQTT_PUBLISH_TOPIC || 'device/updated';
-const mqtt_client_id = process.env.MQTT_CLIENT_ID || 'database_sync_local-client';
-const mqtt_topic_discovery = process.env.MQTT_TOPIC_SMARTHOME_DISCOVERY || 'smarthome/discovery';
-const host_port_mqtt = process.env.MQTT_PORT || 1883;
-const mqtt_protocol = process.env.MQTT_PROTOCOL || 'mqtt';
+function parsePort(value) {
+  if (value === undefined || value === '') return 1883;
+  return Number(value);
+}
 
-const api_key = process.env.API_KEY || '';
-const api_authorization = process.env.API_AUTHORIZATION || '';
+function createConfig(env = process.env) {
+  return Object.freeze({
+    host_name_mqtt: env.MQTT_HOST,
+    host_port_mqtt: parsePort(env.MQTT_PORT),
+    mqtt_protocol: env.MQTT_PROTOCOL || 'mqtt',
+    mqtt_user_name: env.MQTT_USER_NAME,
+    mqtt_password: env.MQTT_PASSWORD,
+    mqtt_client_id: env.MQTT_CLIENT_ID || 'database_sync_local-client',
+    mqtt_topic: env.MQTT_TOPIC || 'device/state',
+    mqtt_publish_topic: env.MQTT_PUBLISH_TOPIC || 'device/updated',
+    mqtt_topic_discovery: env.MQTT_TOPIC_SMARTHOME_DISCOVERY || 'smarthome/discovery',
+    api_url: env.API_URL,
+    api_key: env.API_KEY || '',
+    api_authorization: env.API_AUTHORIZATION || '',
+    log_level: env.LOG_LEVEL || 'info',
+    service_name: env.MQTT_CLIENT_ID || 'smart-home-database-sync',
+    environment: env.NODE_ENV || env.ENV || 'development',
+  });
+}
 
-module.exports = {
-    host_name_mqtt,
-    host_port_mqtt,
-    mqtt_protocol,
-    api_url,
-    mqtt_topic,
-    mqtt_user_name,
-    mqtt_password,
-    mqtt_publish_topic,
-    mqtt_client_id,
-    mqtt_topic_discovery,
-    api_key,
-    api_authorization,
-};
+function validateConfig(config) {
+  const errors = [];
+
+  if (!isNonEmptyString(config.host_name_mqtt)) {
+    errors.push('MQTT_HOST é obrigatório');
+  }
+  if (!Number.isInteger(config.host_port_mqtt) || config.host_port_mqtt < 1 || config.host_port_mqtt > 65535) {
+    errors.push('MQTT_PORT deve ser um número inteiro entre 1 e 65535');
+  }
+  if (!ALLOWED_MQTT_PROTOCOLS.has(config.mqtt_protocol)) {
+    errors.push(`MQTT_PROTOCOL deve ser um de: ${[...ALLOWED_MQTT_PROTOCOLS].join(', ')}`);
+  }
+  if (!isHttpUrl(config.api_url)) {
+    errors.push('API_URL deve ser uma URL HTTP ou HTTPS válida');
+  }
+
+  for (const [name, value] of [
+    ['MQTT_TOPIC', config.mqtt_topic],
+    ['MQTT_PUBLISH_TOPIC', config.mqtt_publish_topic],
+    ['MQTT_TOPIC_SMARTHOME_DISCOVERY', config.mqtt_topic_discovery],
+    ['MQTT_CLIENT_ID', config.mqtt_client_id],
+  ]) {
+    if (!isNonEmptyString(value)) errors.push(`${name} não pode ser vazio`);
+  }
+
+  const hasUsername = isNonEmptyString(config.mqtt_user_name);
+  const hasPassword = isNonEmptyString(config.mqtt_password);
+  if (hasUsername !== hasPassword) {
+    errors.push('MQTT_USER_NAME e MQTT_PASSWORD devem ser informados juntos');
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Configuração inválida:\n- ${errors.join('\n- ')}`);
+  }
+
+  return config;
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim() !== '';
+}
+
+function isHttpUrl(value) {
+  if (!isNonEmptyString(value)) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const config = createConfig();
+
+module.exports = Object.freeze({
+  ...config,
+  createConfig,
+  validateConfig,
+});
