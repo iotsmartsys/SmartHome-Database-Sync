@@ -80,7 +80,7 @@ test('criação de capability preserva false e codifica device_id', async () => 
       value: false,
     });
 
-    assert.equal(result.ok, true);
+    assert.equal(result.status, 201);
     assert.equal(request.url, 'devices/device%2F01/capabilities');
     assert.equal(request.body[0].value, false);
   } finally {

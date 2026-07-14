@@ -38,7 +38,10 @@ function registerHandlers(client) {
       try {
         await handleMessage(client, topic, message);
       } catch (err) {
-        logger.error('Erro no processamento da mensagem:', err);
+        logger.error(
+          { err, code: err.code, retryable: err.retryable, details: err.details },
+          'Erro no processamento da mensagem'
+        );
       }
     });
   });
@@ -68,42 +71,34 @@ async function handleMessage(client, topic, message) {
 
 async function handleDiscoveryMessage(client, message) {
   logger.info({ message: summarizeMessage(message) }, 'Mensagem de discovery recebida');
-  try {
-    const devicePayload = JSON.parse(message.toString());
-    logger.debug(
-      {
-        device_id: devicePayload.device_id,
-        type: devicePayload.type,
-        capabilitiesCount: (devicePayload.capabilities || []).length,
-      },
-      'Discovery parseada'
-    );
-    if (devicePayload.type && devicePayload.type == 'property') {
-      await processPropertiesAsync([devicePayload]);
-      return;
-    }
-    await processDiscoveryDevice(devicePayload);
-    logger.info(
-      { device_id: devicePayload.device_id, capabilities: (devicePayload.capabilities || []).length },
-      'Notificando a atualização para outros consumers'
-    );
-    const capabilities = devicePayload.capabilities || [];
-    for (const capability of capabilities) {
-      const toSend = {
-        device_id: devicePayload.device_id,
-        capability_name: capability.capability_name,
-        value: capability.value,
-        type: capability.type
-      };
-      logger.debug(
-        { device_id: toSend.device_id, capabilityName: toSend.capability_name },
-        'Publicando capability no tópico principal'
-      );
-      publish(client, mqtt_topic, toSend);
-    }
-  } catch (err) {
-    logger.error({ message: err.message }, 'Erro ao processar mensagem de discovery');
+  const devicePayload = JSON.parse(message.toString());
+  logger.debug(
+    {
+      device_id: devicePayload.device_id,
+      type: devicePayload.type,
+      capabilitiesCount: (devicePayload.capabilities || []).length,
+    },
+    'Discovery parseada'
+  );
+  if (devicePayload.type === 'property') {
+    await processPropertiesAsync([devicePayload]);
+    return;
   }
+  await processDiscoveryDevice(devicePayload);
+  const capabilities = devicePayload.capabilities || [];
+  for (const capability of capabilities) {
+    const toSend = {
+      device_id: devicePayload.device_id,
+      capability_name: capability.capability_name,
+      value: capability.value,
+      type: capability.type,
+    };
+    await publish(client, mqtt_topic, toSend);
+  }
+  logger.info(
+    { device_id: devicePayload.device_id, capabilities: capabilities.length },
+    'Discovery sincronizado e capabilities publicadas'
+  );
 }
 
 async function processPropertiesAsync(properties) {
@@ -133,16 +128,15 @@ async function processPropertiesAsync(properties) {
 }
 
 async function handleCapabilityMessage(client, message) {
-  try {
-    const payload = JSON.parse(message.toString());
-    logger.debug(
-      { device_id: payload.device_id, capabilityName: payload.capability_name, value: payload.value },
-      'Payload de capability parseado'
-    );
-    const capabilityName = payload.capability_name;
-    const newValue = payload.value;
-    if (!capabilityName || newValue === undefined) return;
-    switch (capabilityName) {
+  const payload = JSON.parse(message.toString());
+  logger.debug(
+    { device_id: payload.device_id, capabilityName: payload.capability_name, value: payload.value },
+    'Payload de capability parseado'
+  );
+  const capabilityName = payload.capability_name;
+  const newValue = payload.value;
+  if (!capabilityName || newValue === undefined) return;
+  switch (capabilityName) {
       case 'device_state': {
         await updateDevice(payload.device_id, [createPatch('state', newValue)]);
         logger.info(
@@ -176,25 +170,26 @@ async function handleCapabilityMessage(client, message) {
         }
         const updateResult = await updateCapability(capabilityName, newValue, payload);
         if (updateResult?.action === 'discovery_required' && updateResult?.discoveryPayload) {
-          publish(client, mqtt_topic_discovery, updateResult.discoveryPayload);
+          await publish(client, mqtt_topic_discovery, updateResult.discoveryPayload);
           logger.info(
             { device_id: payload.device_id, capabilityName },
             'Payload de discovery Zigbee publicado por device inexistente'
           );
+          break;
         }
-        publishCapabilityUpdate(client, payload.device_id, capabilityName, newValue);
+        await publishCapabilityUpdate(client, payload.device_id, capabilityName, newValue);
         logger.info(
           { device_id: payload.device_id, capabilityName, value: newValue },
           'Capability atualizada'
         );
         break;
       }
-    }
-  } catch (err) {
-    logger.error({ message: err.message }, 'Erro ao processar mensagem MQTT');
   }
 }
 
 module.exports = {
   registerHandlers,
+  handleMessage,
+  handleDiscoveryMessage,
+  handleCapabilityMessage,
 };

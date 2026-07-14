@@ -2,188 +2,134 @@ const http = require('../utils/http');
 const { getCurrentFormattedDate } = require('../utils/date');
 const { getPlatformFromDeviceId } = require('../utils/platform');
 const { processCapabilities } = require('./capabilities');
+const { ValidationError, isNotFoundError, toInfrastructureError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
 async function processDiscoveryDevice(devicePayload) {
   validateDeviceId(devicePayload?.device_id);
   const deviceId = devicePayload.device_id;
   const properties = devicePayload.properties || [];
-  logger.info({ device_id: devicePayload.device_id }, 'Verificando existência do dispositivo');
-  const checkUrl = `devices/${encodeURIComponent(deviceId)}`;
+
+  let deviceExists = true;
   try {
-    logger.debug({ url: checkUrl, baseURL: http.defaults.baseURL }, 'Verificando URL do dispositivo');
-    await http.get(checkUrl);
-    logger.info({ device_id: devicePayload.device_id }, 'Dispositivo já existe');
-
-    const patches = [];
-    if (devicePayload.mac_address) {
-      patches.push(createPatch('mac_address', devicePayload.mac_address));
+    await http.get(`devices/${encodeURIComponent(deviceId)}`);
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw toInfrastructureError(error, 'Erro ao sincronizar dispositivo de discovery', { deviceId });
     }
-    patches.push(createPatch('ip_address', devicePayload.ip_address));
-    patches.push(createPatch('power_on', getCurrentFormattedDate()));
-    logger.debug(
-      { device_id: devicePayload.device_id, patches },
-      'Patches do dispositivo a serem atualizados'
-    );
-    await updateDevice(deviceId, patches);
+    deviceExists = false;
+  }
 
-    logger.info({ device_id: devicePayload.device_id }, 'Verificando propriedades do dispositivo');
-    for (const prop of properties) {
-      await updateProperty(
-        deviceId,
-        prop.name,
-        prop.value,
-        prop.name
-      );
+  if (deviceExists) {
+    logger.info({ device_id: deviceId }, 'Dispositivo já existe');
+    await updateDevice(deviceId, buildDevicePatches(devicePayload));
+
+    for (const property of properties) {
+      await updateProperty(deviceId, property.name, property.value, property.name);
     }
-    logger.info(
-      { device_id: deviceId, count: properties.length },
-      'Propriedades atualizadas para o dispositivo'
-    );
-
-
-    logger.info({ device_id: devicePayload.device_id }, 'Atualizacao do dispositivo processada com sucesso');
-  } catch (err) {
-    if (err.response && err.response.status === 404) {
-      await createDevice(devicePayload);
-    } else {
-      logger.error(
-        {
-          device_id: devicePayload.device_id,
-          url: checkUrl,
-          status: err?.response?.status,
-          response: err?.response?.data,
-          err,
-        },
-        'Erro ao verificar existência do dispositivo'
-      );
-    }
+    logger.info({ device_id: deviceId, count: properties.length }, 'Propriedades atualizadas para o dispositivo');
+  } else {
+    await createDevice(devicePayload);
   }
 
   await processCapabilities(devicePayload);
+  logger.info({ device_id: deviceId }, 'Discovery do dispositivo processado com sucesso');
+  return { action: 'synchronized', deviceId };
 }
 
 async function createDevice(devicePayload) {
-  let platform = devicePayload.platform;
-  if (!platform) {
-    logger.warn(
-      `Plataforma não especificada para o dispositivo ${devicePayload.device_id}. Tentando determinar a partir do device_id.`
-    );
-    platform = getPlatformFromDeviceId(devicePayload.device_id);
-  }
-
+  validateDeviceId(devicePayload?.device_id);
+  const deviceId = devicePayload.device_id;
+  const platform = devicePayload.platform || getPlatformFromDeviceId(deviceId);
   const newDevice = mapPayloadToCreate(devicePayload, platform);
 
-  logger.debug({ device_id: devicePayload.device_id, payload: newDevice }, 'Payload de criação do dispositivo');
+  if (!devicePayload.platform) {
+    logger.warn({ device_id: deviceId, platform }, 'Plataforma não especificada para o dispositivo');
+  }
+
   try {
     const response = await http.post('devices', newDevice);
-    logger.info(
-      { device_id: devicePayload.device_id, status: response.status, response: response.data },
-      'Dispositivo criado com sucesso'
-    );
-  } catch (postErr) {
-    logger.error(
-      {
-        device_id: devicePayload.device_id,
-        status: postErr?.response?.status,
-        response: postErr?.response?.data,
-        err: postErr,
-      },
-      'Erro ao criar dispositivo'
-    );
+    logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo criado com sucesso');
+    return response;
+  } catch (error) {
+    throw toInfrastructureError(error, 'Erro ao criar dispositivo', { deviceId });
   }
 }
 
 function mapPayloadToCreate(devicePayload, platform) {
   validateDeviceId(devicePayload?.device_id);
   const currentDate = getCurrentFormattedDate();
-  const macAddress = devicePayload.mac_address || '00:00:00:00:00:00';
-  const properties = [];
-  for (const prop of devicePayload.properties || []) {
-    properties.push({
-      name: prop.name,
-      description: prop.name,
-      value: prop.value,
-    });
-  }
+  const properties = (devicePayload.properties || []).map((property) => ({
+    name: property.name,
+    description: property.name,
+    value: property.value,
+  }));
+
   return {
     device_id: devicePayload.device_id,
     device_name: devicePayload.device_id,
     description: devicePayload.device_id,
     last_active: currentDate,
     state: 'Active',
-    mac_address: macAddress,
+    mac_address: devicePayload.mac_address || '00:00:00:00:00:00',
     ip_address: devicePayload.ip_address,
     protocol: 'MQTT',
-    platform: platform,
+    platform,
     capabilities: [],
-    properties: properties,
+    properties,
     power_on: currentDate,
   };
+}
+
+function buildDevicePatches(devicePayload) {
+  const patches = [];
+  if (devicePayload.mac_address) {
+    patches.push(createPatch('mac_address', devicePayload.mac_address));
+  }
+  patches.push(createPatch('ip_address', devicePayload.ip_address));
+  patches.push(createPatch('power_on', getCurrentFormattedDate()));
+  return patches;
 }
 
 function createPatch(name, value) {
   return { op: 'replace', path: name, value };
 }
 
-async function updateDevice(deviceId, properties) {
+async function updateDevice(deviceId, patches) {
   validateDeviceId(deviceId);
-  logger.debug({ device_id: deviceId, patches: properties }, 'Payload de atualizacao do dispositivo');
   try {
-    const response = await http.patch(`devices/${encodeURIComponent(deviceId)}`, properties);
-    logger.info(
-      { device_id: deviceId, status: response.status, response: response.data },
-      'Dispositivo atualizado com sucesso'
-    );
-  } catch (err) {
-    logger.error(
-      {
-        device_id: deviceId,
-        status: err?.response?.status,
-        response: err?.response?.data,
-        err,
-      },
-      'Erro ao atualizar dispositivo'
-    );
+    const response = await http.patch(`devices/${encodeURIComponent(deviceId)}`, patches);
+    logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo atualizado com sucesso');
+    return response;
+  } catch (error) {
+    throw toInfrastructureError(error, 'Erro ao atualizar dispositivo', { deviceId });
   }
 }
 
 async function updateProperty(deviceId, propertyName, value, description) {
   validateDeviceId(deviceId);
-  const updatePayload = {
+  if (typeof propertyName !== 'string' || propertyName.trim() === '') {
+    throw new ValidationError('property_name deve ser uma string não vazia', { deviceId });
+  }
+
+  const payload = {
     name: propertyName,
     description: description || propertyName,
     value,
   };
 
-  logger.debug(
-    { device_id: deviceId, property_name: propertyName, value, description, payload: updatePayload },
-    'Payload de atualizacao da propriedade'
-  );
-
   try {
-    const response = await http.put(`devices/${encodeURIComponent(deviceId)}/properties`, updatePayload);
-    logger.info(
-      { device_id: deviceId, property_name: propertyName, status: response.status, response: response.data },
-      'Propriedade atualizada com sucesso'
-    );
-  } catch (err) {
-    logger.error(
-      {
-        device_id: deviceId,
-        property_name: propertyName,
-        status: err?.response?.status,
-        response: err?.response?.data,
-        err,
-      },
-      'Erro ao atualizar propriedade'
-    );
+    const response = await http.put(`devices/${encodeURIComponent(deviceId)}/properties`, payload);
+    logger.info({ device_id: deviceId, property_name: propertyName, status: response.status }, 'Propriedade atualizada com sucesso');
+    return response;
+  } catch (error) {
+    throw toInfrastructureError(error, 'Erro ao atualizar propriedade', { deviceId, propertyName });
   }
 }
 
 function validateDeviceId(deviceId) {
   if (typeof deviceId !== 'string' || deviceId.trim() === '') {
-    throw new TypeError('device_id deve ser uma string não vazia');
+    throw new ValidationError('device_id deve ser uma string não vazia');
   }
 }
 
