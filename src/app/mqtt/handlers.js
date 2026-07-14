@@ -1,4 +1,5 @@
-const { processDiscoveryDevice, updateDevice, updateProperty, createPatch } = require('../managers/devices');
+const { processDiscoveryDevice, updateDevice, updateProperty } = require('../managers/devices');
+const { createPatch } = require('../domain/device-mapper');
 const { updateCapability } = require('../managers/capabilities');
 const { mqtt_topic, mqtt_topic_discovery } = require('../utils/config');
 const { publish, publishCapabilityUpdate } = require('./publisher');

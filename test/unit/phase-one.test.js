@@ -6,8 +6,8 @@ const { formatDate } = require('../../src/app/utils/date');
 const { mapPayloadToCreate } = require('../../src/app/managers/devices');
 const {
   buildZigbeeDiscoveryPayload,
-  createCapability,
-} = require('../../src/app/managers/capabilities');
+} = require('../../src/app/domain/capability-rules');
+const { createCapability } = require('../../src/app/managers/capabilities');
 const { createConnectionLogContext } = require('../../src/app/mqtt/client');
 
 test('contexto de log MQTT não expõe credenciais', () => {
@@ -111,7 +111,7 @@ test('criação de capability preserva zero', async () => {
 test('datas usam um único formato', () => {
   assert.equal(formatDate(new Date('2026-07-13T12:34:56.789Z')), '2026-07-13 12:34:56');
 
-  const discovery = buildZigbeeDiscoveryPayload('zigbee-AABBCCDDEEFF');
-  assert.match(discovery.last_active, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+  const discovery = buildZigbeeDiscoveryPayload('zigbee-AABBCCDDEEFF', '2026-07-13 12:34:56');
+  assert.equal(discovery.last_active, '2026-07-13 12:34:56');
   assert.equal(discovery.mac_address, 'AA:BB:CC:DD:EE:FF');
 });

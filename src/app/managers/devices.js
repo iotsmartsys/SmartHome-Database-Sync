@@ -1,9 +1,14 @@
-const http = require('../utils/http');
+const { deviceApi } = require('../infrastructure/http/device-api');
 const { getCurrentFormattedDate } = require('../utils/date');
 const { getPlatformFromDeviceId } = require('../utils/platform');
 const { processCapabilities } = require('./capabilities');
-const { ValidationError, isNotFoundError, toInfrastructureError } = require('../utils/errors');
+const { ValidationError, isNotFoundError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const {
+  mapDiscoveryToDevice,
+  buildDevicePatches,
+  buildPropertyUpdate,
+} = require('../domain/device-mapper');
 
 async function processDiscoveryDevice(devicePayload) {
   validateDeviceId(devicePayload?.device_id);
@@ -12,17 +17,17 @@ async function processDiscoveryDevice(devicePayload) {
 
   let deviceExists = true;
   try {
-    await http.get(`devices/${encodeURIComponent(deviceId)}`);
+    await deviceApi.getDevice(deviceId);
   } catch (error) {
     if (!isNotFoundError(error)) {
-      throw toInfrastructureError(error, 'Erro ao sincronizar dispositivo de discovery', { deviceId });
+      throw error;
     }
     deviceExists = false;
   }
 
   if (deviceExists) {
     logger.info({ device_id: deviceId }, 'Dispositivo já existe');
-    await updateDevice(deviceId, buildDevicePatches(devicePayload));
+    await updateDevice(deviceId, buildDevicePatches(devicePayload, getCurrentFormattedDate()));
 
     for (const property of properties) {
       await updateProperty(deviceId, property.name, property.value, property.name);
@@ -47,63 +52,21 @@ async function createDevice(devicePayload) {
     logger.warn({ device_id: deviceId, platform }, 'Plataforma não especificada para o dispositivo');
   }
 
-  try {
-    const response = await http.post('devices', newDevice);
-    logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo criado com sucesso');
-    return response;
-  } catch (error) {
-    throw toInfrastructureError(error, 'Erro ao criar dispositivo', { deviceId });
-  }
+  const response = await deviceApi.createDevice(newDevice);
+  logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo criado com sucesso');
+  return response;
 }
 
 function mapPayloadToCreate(devicePayload, platform) {
   validateDeviceId(devicePayload?.device_id);
-  const currentDate = getCurrentFormattedDate();
-  const properties = (devicePayload.properties || []).map((property) => ({
-    name: property.name,
-    description: property.name,
-    value: property.value,
-  }));
-
-  return {
-    device_id: devicePayload.device_id,
-    device_name: devicePayload.device_id,
-    description: devicePayload.device_id,
-    last_active: currentDate,
-    state: 'Active',
-    mac_address: devicePayload.mac_address || '00:00:00:00:00:00',
-    ip_address: devicePayload.ip_address,
-    protocol: 'MQTT',
-    platform,
-    capabilities: [],
-    properties,
-    power_on: currentDate,
-  };
-}
-
-function buildDevicePatches(devicePayload) {
-  const patches = [];
-  if (devicePayload.mac_address) {
-    patches.push(createPatch('mac_address', devicePayload.mac_address));
-  }
-  patches.push(createPatch('ip_address', devicePayload.ip_address));
-  patches.push(createPatch('power_on', getCurrentFormattedDate()));
-  return patches;
-}
-
-function createPatch(name, value) {
-  return { op: 'replace', path: name, value };
+  return mapDiscoveryToDevice(devicePayload, platform, getCurrentFormattedDate());
 }
 
 async function updateDevice(deviceId, patches) {
   validateDeviceId(deviceId);
-  try {
-    const response = await http.patch(`devices/${encodeURIComponent(deviceId)}`, patches);
-    logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo atualizado com sucesso');
-    return response;
-  } catch (error) {
-    throw toInfrastructureError(error, 'Erro ao atualizar dispositivo', { deviceId });
-  }
+  const response = await deviceApi.updateDevice(deviceId, patches);
+  logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo atualizado com sucesso');
+  return response;
 }
 
 async function updateProperty(deviceId, propertyName, value, description) {
@@ -112,19 +75,11 @@ async function updateProperty(deviceId, propertyName, value, description) {
     throw new ValidationError('property_name deve ser uma string não vazia', { deviceId });
   }
 
-  const payload = {
-    name: propertyName,
-    description: description || propertyName,
-    value,
-  };
+  const payload = buildPropertyUpdate(propertyName, value, description || propertyName);
 
-  try {
-    const response = await http.put(`devices/${encodeURIComponent(deviceId)}/properties`, payload);
-    logger.info({ device_id: deviceId, property_name: propertyName, status: response.status }, 'Propriedade atualizada com sucesso');
-    return response;
-  } catch (error) {
-    throw toInfrastructureError(error, 'Erro ao atualizar propriedade', { deviceId, propertyName });
-  }
+  const response = await deviceApi.upsertProperty(deviceId, payload);
+  logger.info({ device_id: deviceId, property_name: propertyName, status: response.status }, 'Propriedade atualizada com sucesso');
+  return response;
 }
 
 function validateDeviceId(deviceId) {
@@ -138,6 +93,5 @@ module.exports = {
   createDevice,
   updateDevice,
   updateProperty,
-  createPatch,
   mapPayloadToCreate,
 };
