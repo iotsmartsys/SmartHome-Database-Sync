@@ -72,7 +72,9 @@ function assertObject(value, name) {
 
 function assertIdentifier(value, name) {
   if (typeof value !== 'string' || value.trim() === '' || value.length > MAX_IDENTIFIER_LENGTH) {
-    throw new ValidationError(`${name} deve ser uma string não vazia de até ${MAX_IDENTIFIER_LENGTH} caracteres`);
+    throw new ValidationError(
+      `${name} deve ser uma string não vazia de até ${MAX_IDENTIFIER_LENGTH} caracteres`,
+    );
   }
 }
 

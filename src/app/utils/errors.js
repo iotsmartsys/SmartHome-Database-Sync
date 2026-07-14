@@ -28,7 +28,12 @@ class InfrastructureError extends ApplicationError {
       code: 'INFRASTRUCTURE_ERROR',
       cause,
       details,
-      retryable: status === undefined || status === null || status === 408 || status === 429 || status >= 500,
+      retryable:
+        status === undefined ||
+        status === null ||
+        status === 408 ||
+        status === 429 ||
+        status >= 500,
     });
     this.status = status;
     this.response = response;

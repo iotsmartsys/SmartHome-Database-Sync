@@ -11,15 +11,21 @@ function createProcessPropertyUpdate({ deviceApi, logger }) {
 
     if (propertyName === 'device_state') {
       const response = await deviceApi.updateDevice(deviceId, [createPatch('state', value)]);
-      logger.info({ device_id: deviceId, state: value, status: response.status }, 'Estado do dispositivo atualizado');
+      logger.info(
+        { device_id: deviceId, state: value, status: response.status },
+        'Estado do dispositivo atualizado',
+      );
       return { action: 'device_updated', deviceId };
     }
 
     const response = await deviceApi.upsertProperty(
       deviceId,
-      buildPropertyUpdate(propertyName, value, description || propertyName)
+      buildPropertyUpdate(propertyName, value, description || propertyName),
     );
-    logger.info({ device_id: deviceId, property_name: propertyName, status: response.status }, 'Propriedade do dispositivo atualizada');
+    logger.info(
+      { device_id: deviceId, property_name: propertyName, status: response.status },
+      'Propriedade do dispositivo atualizada',
+    );
     return { action: 'property_updated', deviceId, propertyName };
   };
 }

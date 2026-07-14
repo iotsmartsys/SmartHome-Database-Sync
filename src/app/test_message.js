@@ -16,7 +16,7 @@ function createFakeClient() {
     emit(event, ...args) {
       const fns = listeners[event] || [];
       for (const fn of fns) fn(...args);
-    }
+    },
   };
 }
 

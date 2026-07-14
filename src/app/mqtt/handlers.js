@@ -29,16 +29,24 @@ function createHandlers({
       });
     }
     const result = await application.processDiscovery(payload);
-    await createMqttEventPublisher({ client, topics, publish, publishCapabilityUpdate })
-      .publishEvents(result.events || []);
+    await createMqttEventPublisher({
+      client,
+      topics,
+      publish,
+      publishCapabilityUpdate,
+    }).publishEvents(result.events || []);
     return result;
   }
 
   async function handleCapabilityMessage(client, message) {
     const payload = validator.validateCapabilityPayload(validator.parseJsonMessage(message));
     const result = await application.processCapabilityUpdate(payload);
-    await createMqttEventPublisher({ client, topics, publish, publishCapabilityUpdate })
-      .publishEvents(result.events || []);
+    await createMqttEventPublisher({
+      client,
+      topics,
+      publish,
+      publishCapabilityUpdate,
+    }).publishEvents(result.events || []);
     return result;
   }
 
@@ -59,13 +67,21 @@ function createHandlers({
         try {
           await router.route(client, topic, message);
         } catch (err) {
-          appLogger.error({ err, code: err.code, retryable: err.retryable, details: err.details }, 'Erro no processamento da mensagem');
+          appLogger.error(
+            { err, code: err.code, retryable: err.retryable, details: err.details },
+            'Erro no processamento da mensagem',
+          );
         }
       });
     });
   }
 
-  return { registerHandlers, handleMessage: router.route, handleDiscoveryMessage, handleCapabilityMessage };
+  return {
+    registerHandlers,
+    handleMessage: router.route,
+    handleDiscoveryMessage,
+    handleCapabilityMessage,
+  };
 }
 
 function subscribe(client, topic, appLogger) {

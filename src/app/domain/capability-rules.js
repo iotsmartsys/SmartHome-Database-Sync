@@ -3,14 +3,16 @@ function buildCapabilityUpdate(capabilityName, value) {
 }
 
 function buildCapabilityToCreate(deviceId, capability) {
-  return [{
-    capability_name: capability.capability_name,
-    description: capability.description || capability.capability_name,
-    owner: capability.owner || deviceId,
-    device_id: deviceId,
-    type: capability.type,
-    value: capability.value ?? '',
-  }];
+  return [
+    {
+      capability_name: capability.capability_name,
+      description: capability.description || capability.capability_name,
+      owner: capability.owner || deviceId,
+      device_id: deviceId,
+      type: capability.type,
+      value: capability.value ?? '',
+    },
+  ];
 }
 
 function isZigbeeDeviceId(deviceId = '') {

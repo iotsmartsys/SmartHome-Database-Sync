@@ -22,33 +22,37 @@ test('validador preserva false, zero e null quando o campo value existe', () => 
 });
 
 test('campos opcionais vazios são tratados como não informados', () => {
-  assert.doesNotThrow(() => validateCapabilityPayload({
-    device_id: 'device-01',
-    capability_name: 'sensor',
-    value: true,
-    type: '',
-    owner: '',
-  }));
-  assert.doesNotThrow(() => validateDiscoveryPayload({
-    device_id: 'device-01',
-    platform: '',
-    capabilities: [{ capability_name: 'sensor', value: true, type: '' }],
-  }));
+  assert.doesNotThrow(() =>
+    validateCapabilityPayload({
+      device_id: 'device-01',
+      capability_name: 'sensor',
+      value: true,
+      type: '',
+      owner: '',
+    }),
+  );
+  assert.doesNotThrow(() =>
+    validateDiscoveryPayload({
+      device_id: 'device-01',
+      platform: '',
+      capabilities: [{ capability_name: 'sensor', value: true, type: '' }],
+    }),
+  );
 });
 
 test('validador rejeita JSON, campos e estruturas inválidas', () => {
   assert.throws(() => parseJsonMessage(Buffer.from('{')), ValidationError);
   assert.throws(
     () => validateCapabilityPayload({ device_id: 'device-01', capability_name: 'sensor' }),
-    /value é obrigatório/
+    /value é obrigatório/,
   );
   assert.throws(
     () => validateDiscoveryPayload({ device_id: 'device-01', properties: {} }),
-    /properties deve ser uma lista/
+    /properties deve ser uma lista/,
   );
   assert.throws(
     () => parseJsonMessage(Buffer.from('a'.repeat(MAX_MESSAGE_BYTES + 1))),
-    /excede o limite/
+    /excede o limite/,
   );
 });
 
@@ -58,15 +62,21 @@ test('handler não chama a aplicação com payload MQTT inválido', async () => 
     topics: { capability: 'capability/topic', discovery: 'discovery/topic' },
     appLogger: { info() {}, warn() {}, error() {} },
     application: {
-      processCapabilityUpdate: async () => { called = true; },
-      processDiscovery: async () => { called = true; },
-      processPropertyUpdate: async () => { called = true; },
+      processCapabilityUpdate: async () => {
+        called = true;
+      },
+      processDiscovery: async () => {
+        called = true;
+      },
+      processPropertyUpdate: async () => {
+        called = true;
+      },
     },
   });
 
   await assert.rejects(
     () => handlers.handleMessage({}, 'capability/topic', Buffer.from('{"device_id":"device-01"}')),
-    ValidationError
+    ValidationError,
   );
   assert.equal(called, false);
 });

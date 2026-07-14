@@ -23,7 +23,8 @@ test('atualização de dispositivo propaga falha HTTP como InfrastructureError',
   try {
     await assert.rejects(
       () => updateDevice('device-01', []),
-      (error) => error instanceof InfrastructureError && error.status === 503 && error.retryable === true
+      (error) =>
+        error instanceof InfrastructureError && error.status === 503 && error.retryable === true,
     );
   } finally {
     http.patch = originalPatch;
@@ -38,8 +39,9 @@ test('criação de capability propaga 404 como NotFoundError com resposta', asyn
 
   try {
     await assert.rejects(
-      () => createCapability('zigbee-AA', { capability_name: 'on_off', type: 'boolean', value: true }),
-      (error) => error instanceof NotFoundError && error.response === 'device not found'
+      () =>
+        createCapability('zigbee-AA', { capability_name: 'on_off', type: 'boolean', value: true }),
+      (error) => error instanceof NotFoundError && error.response === 'device not found',
     );
   } finally {
     http.post = originalPost;
@@ -71,13 +73,19 @@ test('handler não publica atualização quando persistência de capability falh
 
   try {
     await assert.rejects(
-      () => handleCapabilityMessage(client, Buffer.from(JSON.stringify({
-        device_id: 'device-01',
-        capability_name: 'on_off',
-        value: true,
-        type: 'boolean',
-      }))),
-      InfrastructureError
+      () =>
+        handleCapabilityMessage(
+          client,
+          Buffer.from(
+            JSON.stringify({
+              device_id: 'device-01',
+              capability_name: 'on_off',
+              value: true,
+              type: 'boolean',
+            }),
+          ),
+        ),
+      InfrastructureError,
     );
     assert.deepEqual(client.published, []);
   } finally {
@@ -102,12 +110,18 @@ test('discovery não publica capabilities quando a persistência do dispositivo 
 
   try {
     await assert.rejects(
-      () => handleDiscoveryMessage(client, Buffer.from(JSON.stringify({
-        device_id: 'device-01',
-        properties: [],
-        capabilities: [{ capability_name: 'on_off', value: true, type: 'boolean' }],
-      }))),
-      InfrastructureError
+      () =>
+        handleDiscoveryMessage(
+          client,
+          Buffer.from(
+            JSON.stringify({
+              device_id: 'device-01',
+              properties: [],
+              capabilities: [{ capability_name: 'on_off', value: true, type: 'boolean' }],
+            }),
+          ),
+        ),
+      InfrastructureError,
     );
     assert.deepEqual(client.published, []);
   } finally {
@@ -134,12 +148,17 @@ test('capability Zigbee inexistente publica apenas o pedido de discovery', async
   };
 
   try {
-    await handleCapabilityMessage(client, Buffer.from(JSON.stringify({
-      device_id: 'zigbee-AABBCCDDEEFF',
-      capability_name: 'on_off',
-      value: true,
-      type: 'boolean',
-    })));
+    await handleCapabilityMessage(
+      client,
+      Buffer.from(
+        JSON.stringify({
+          device_id: 'zigbee-AABBCCDDEEFF',
+          capability_name: 'on_off',
+          value: true,
+          type: 'boolean',
+        }),
+      ),
+    );
     assert.equal(client.published.length, 1);
     assert.equal(client.published[0].topic, 'smarthome/discovery');
     assert.equal(client.published[0].payload.device_id, 'zigbee-AABBCCDDEEFF');

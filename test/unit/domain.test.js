@@ -42,18 +42,21 @@ test('regras de capability preservam valores falsy e recebem data explicitamente
     capability_name: 'enabled',
     value: false,
   });
-  assert.deepEqual(buildCapabilityToCreate('device-01', {
-    capability_name: 'counter',
-    type: 'number',
-    value: 0,
-  })[0], {
-    capability_name: 'counter',
-    description: 'counter',
-    owner: 'device-01',
-    device_id: 'device-01',
-    type: 'number',
-    value: 0,
-  });
+  assert.deepEqual(
+    buildCapabilityToCreate('device-01', {
+      capability_name: 'counter',
+      type: 'number',
+      value: 0,
+    })[0],
+    {
+      capability_name: 'counter',
+      description: 'counter',
+      owner: 'device-01',
+      device_id: 'device-01',
+      type: 'number',
+      value: 0,
+    },
+  );
 
   const discovery = buildZigbeeDiscoveryPayload('zigbee-AABBCCDDEEFF', '2026-07-13 12:34:56');
   assert.equal(discovery.last_active, '2026-07-13 12:34:56');

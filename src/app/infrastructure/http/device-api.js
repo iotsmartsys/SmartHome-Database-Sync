@@ -7,23 +7,21 @@ function createDeviceApi(httpClient = defaultHttpClient) {
       return request(
         () => httpClient.get(`devices/${encodeURIComponent(deviceId)}`),
         'Erro ao buscar dispositivo',
-        { deviceId }
+        { deviceId },
       );
     },
 
     createDevice(device) {
-      return request(
-        () => httpClient.post('devices', device),
-        'Erro ao criar dispositivo',
-        { deviceId: device.device_id }
-      );
+      return request(() => httpClient.post('devices', device), 'Erro ao criar dispositivo', {
+        deviceId: device.device_id,
+      });
     },
 
     updateDevice(deviceId, patches) {
       return request(
         () => httpClient.patch(`devices/${encodeURIComponent(deviceId)}`, patches),
         'Erro ao atualizar dispositivo',
-        { deviceId }
+        { deviceId },
       );
     },
 
@@ -31,23 +29,30 @@ function createDeviceApi(httpClient = defaultHttpClient) {
       return request(
         () => httpClient.put(`devices/${encodeURIComponent(deviceId)}/properties`, property),
         'Erro ao atualizar propriedade',
-        { deviceId, propertyName: property.name }
+        { deviceId, propertyName: property.name },
       );
     },
 
     getCapability(deviceId, capabilityName) {
       return request(
-        () => httpClient.get(`devices/${encodeURIComponent(deviceId)}/capabilities/${encodeURIComponent(capabilityName)}`),
+        () =>
+          httpClient.get(
+            `devices/${encodeURIComponent(deviceId)}/capabilities/${encodeURIComponent(capabilityName)}`,
+          ),
         'Erro ao verificar capability',
-        { deviceId, capabilityName }
+        { deviceId, capabilityName },
       );
     },
 
     updateCapabilityValue(deviceId, capability) {
       return request(
-        () => httpClient.patch(`devices/${encodeURIComponent(deviceId)}/capabilities/value`, capability),
+        () =>
+          httpClient.patch(
+            `devices/${encodeURIComponent(deviceId)}/capabilities/value`,
+            capability,
+          ),
         'Erro ao atualizar capability',
-        { deviceId, capabilityName: capability.capability_name }
+        { deviceId, capabilityName: capability.capability_name },
       );
     },
 
@@ -55,7 +60,7 @@ function createDeviceApi(httpClient = defaultHttpClient) {
       return request(
         () => httpClient.post(`devices/${encodeURIComponent(deviceId)}/capabilities`, capabilities),
         'Erro ao criar capability',
-        { deviceId, capabilityName: capabilities[0]?.capability_name }
+        { deviceId, capabilityName: capabilities[0]?.capability_name },
       );
     },
   };

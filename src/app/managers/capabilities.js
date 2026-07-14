@@ -1,10 +1,7 @@
 const { deviceApi } = require('../infrastructure/http/device-api');
 const logger = require('../utils/logger');
 const { getCurrentFormattedDate } = require('../utils/date');
-const {
-  ValidationError,
-  isNotFoundError,
-} = require('../utils/errors');
+const { ValidationError, isNotFoundError } = require('../utils/errors');
 const {
   buildCapabilityUpdate,
   buildCapabilityToCreate,
@@ -20,7 +17,10 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
   const patchData = buildCapabilityUpdate(capabilityName, newValue);
   try {
     const response = await deviceApi.updateCapabilityValue(deviceId, patchData);
-    logger.info({ device_id: deviceId, capabilityName, status: response.status }, 'Capability atualizada via API');
+    logger.info(
+      { device_id: deviceId, capabilityName, status: response.status },
+      'Capability atualizada via API',
+    );
     return { action: 'updated' };
   } catch (error) {
     if (!isNotFoundError(error)) {
@@ -51,7 +51,10 @@ async function updateCapability(capabilityName, newValue, payload = {}) {
       isDeviceNotFoundResponse(error.response)
     ) {
       const discoveryPayload = buildZigbeeDiscoveryPayload(deviceId, getCurrentFormattedDate());
-      logger.warn({ device_id: deviceId, capabilityName }, 'Device Zigbee inexistente. Solicitação de discovery montada');
+      logger.warn(
+        { device_id: deviceId, capabilityName },
+        'Device Zigbee inexistente. Solicitação de discovery montada',
+      );
       return { action: 'discovery_required', discoveryPayload };
     }
     throw error;
@@ -80,13 +83,19 @@ async function processCapabilities(devicePayload) {
 async function createCapability(deviceId, capability) {
   validateDeviceId(deviceId);
   if (!capability?.capability_name || !capability.type) {
-    throw new ValidationError('Dados inválidos para criação da capability', { deviceId, capability });
+    throw new ValidationError('Dados inválidos para criação da capability', {
+      deviceId,
+      capability,
+    });
   }
 
   const payload = buildCapabilityToCreate(deviceId, capability);
 
   const response = await deviceApi.createCapabilities(deviceId, payload);
-  logger.info({ device_id: deviceId, capabilityName: capability.capability_name, status: response.status }, 'Capability criada com sucesso');
+  logger.info(
+    { device_id: deviceId, capabilityName: capability.capability_name, status: response.status },
+    'Capability criada com sucesso',
+  );
   return response;
 }
 
@@ -96,7 +105,10 @@ function validateCapabilityUpdate(deviceId, capabilityName, value) {
     throw new ValidationError('capability_name deve ser uma string não vazia', { deviceId });
   }
   if (value === undefined) {
-    throw new ValidationError('value é obrigatório para atualizar uma capability', { deviceId, capabilityName });
+    throw new ValidationError('value é obrigatório para atualizar uma capability', {
+      deviceId,
+      capabilityName,
+    });
   }
 }
 

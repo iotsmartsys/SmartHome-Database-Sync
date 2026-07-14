@@ -38,8 +38,8 @@ if (usePretty) {
     options: {
       colorize: true,
       translateTime: 'yyyy-mm-dd HH:MM:ss.l',
-      ignore: 'pid,hostname'
-    }
+      ignore: 'pid,hostname',
+    },
   });
 
   baseLogger = pino(loggerOptions, transport);
@@ -55,7 +55,8 @@ function injectCorrelation(args) {
   if (!id) return args;
 
   const first = args[0];
-  const isPlainObject = first && typeof first === 'object' && !Array.isArray(first) && !(first instanceof Error);
+  const isPlainObject =
+    first && typeof first === 'object' && !Array.isArray(first) && !(first instanceof Error);
   if (isPlainObject) {
     const meta = Object.assign({ correlationId: id }, first);
     const rest = args.slice(1);

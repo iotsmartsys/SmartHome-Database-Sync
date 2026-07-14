@@ -31,7 +31,11 @@ function validateConfig(config) {
   if (!isNonEmptyString(config.host_name_mqtt)) {
     errors.push('MQTT_HOST é obrigatório');
   }
-  if (!Number.isInteger(config.host_port_mqtt) || config.host_port_mqtt < 1 || config.host_port_mqtt > 65535) {
+  if (
+    !Number.isInteger(config.host_port_mqtt) ||
+    config.host_port_mqtt < 1 ||
+    config.host_port_mqtt > 65535
+  ) {
     errors.push('MQTT_PORT deve ser um número inteiro entre 1 e 65535');
   }
   if (!ALLOWED_MQTT_PROTOCOLS.has(config.mqtt_protocol)) {

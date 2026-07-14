@@ -32,7 +32,10 @@ async function processDiscoveryDevice(devicePayload) {
     for (const property of properties) {
       await updateProperty(deviceId, property.name, property.value, property.name);
     }
-    logger.info({ device_id: deviceId, count: properties.length }, 'Propriedades atualizadas para o dispositivo');
+    logger.info(
+      { device_id: deviceId, count: properties.length },
+      'Propriedades atualizadas para o dispositivo',
+    );
   } else {
     await createDevice(devicePayload);
   }
@@ -49,7 +52,10 @@ async function createDevice(devicePayload) {
   const newDevice = mapPayloadToCreate(devicePayload, platform);
 
   if (!devicePayload.platform) {
-    logger.warn({ device_id: deviceId, platform }, 'Plataforma não especificada para o dispositivo');
+    logger.warn(
+      { device_id: deviceId, platform },
+      'Plataforma não especificada para o dispositivo',
+    );
   }
 
   const response = await deviceApi.createDevice(newDevice);
@@ -65,7 +71,10 @@ function mapPayloadToCreate(devicePayload, platform) {
 async function updateDevice(deviceId, patches) {
   validateDeviceId(deviceId);
   const response = await deviceApi.updateDevice(deviceId, patches);
-  logger.info({ device_id: deviceId, status: response.status }, 'Dispositivo atualizado com sucesso');
+  logger.info(
+    { device_id: deviceId, status: response.status },
+    'Dispositivo atualizado com sucesso',
+  );
   return response;
 }
 
@@ -78,7 +87,10 @@ async function updateProperty(deviceId, propertyName, value, description) {
   const payload = buildPropertyUpdate(propertyName, value, description || propertyName);
 
   const response = await deviceApi.upsertProperty(deviceId, payload);
-  logger.info({ device_id: deviceId, property_name: propertyName, status: response.status }, 'Propriedade atualizada com sucesso');
+  logger.info(
+    { device_id: deviceId, property_name: propertyName, status: response.status },
+    'Propriedade atualizada com sucesso',
+  );
   return response;
 }
 

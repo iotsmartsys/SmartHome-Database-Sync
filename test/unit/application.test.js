@@ -15,10 +15,20 @@ test('caso de uso de discovery cria dispositivo e retorna eventos sem MQTT', asy
     clock: () => '2026-07-13 12:34:56',
     platformResolver: () => 'ESP32',
     deviceApi: {
-      getDevice: async () => { throw new NotFoundError('not found'); },
-      createDevice: async (device) => { calls.push({ type: 'createDevice', device }); return { status: 201 }; },
-      getCapability: async () => { throw new NotFoundError('not found'); },
-      createCapabilities: async (_deviceId, capabilities) => { calls.push({ type: 'createCapabilities', capabilities }); return { status: 201 }; },
+      getDevice: async () => {
+        throw new NotFoundError('not found');
+      },
+      createDevice: async (device) => {
+        calls.push({ type: 'createDevice', device });
+        return { status: 201 };
+      },
+      getCapability: async () => {
+        throw new NotFoundError('not found');
+      },
+      createCapabilities: async (_deviceId, capabilities) => {
+        calls.push({ type: 'createCapabilities', capabilities });
+        return { status: 201 };
+      },
     },
   });
 
@@ -31,10 +41,12 @@ test('caso de uso de discovery cria dispositivo e retorna eventos sem MQTT', asy
   assert.equal(calls[0].type, 'createDevice');
   assert.equal(calls[0].device.platform, 'ESP32');
   assert.equal(calls[1].capabilities[0].value, false);
-  assert.deepEqual(result.events, [{
-    type: 'capability_received',
-    payload: { device_id: 'device-01', capability_name: 'on_off', type: 'boolean', value: false },
-  }]);
+  assert.deepEqual(result.events, [
+    {
+      type: 'capability_received',
+      payload: { device_id: 'device-01', capability_name: 'on_off', type: 'boolean', value: false },
+    },
+  ]);
 });
 
 test('caso de uso de capability retorna evento após atualização persistida', async () => {
@@ -46,12 +58,16 @@ test('caso de uso de capability retorna evento após atualização persistida', 
   });
 
   const result = await application.processCapabilityUpdate({
-    device_id: 'device-01', capability_name: 'on_off', value: true,
+    device_id: 'device-01',
+    capability_name: 'on_off',
+    value: true,
   });
 
   assert.deepEqual(result, {
     action: 'capability_updated',
-    events: [{ type: 'capability_updated', deviceId: 'device-01', capabilityName: 'on_off', value: true }],
+    events: [
+      { type: 'capability_updated', deviceId: 'device-01', capabilityName: 'on_off', value: true },
+    ],
   });
 });
 
@@ -68,7 +84,9 @@ test('caso de uso de propriedade trata device_state como patch de dispositivo', 
   });
 
   const result = await application.processPropertyUpdate({
-    deviceId: 'device-01', propertyName: 'device_state', value: 'online',
+    deviceId: 'device-01',
+    propertyName: 'device_state',
+    value: 'online',
   });
 
   assert.deepEqual(patches, [{ op: 'replace', path: 'state', value: 'online' }]);

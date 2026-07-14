@@ -32,14 +32,17 @@ test('deviceApi centraliza método, URL e codificação de identificadores', asy
   await api.updateCapabilityValue('device/01', { capability_name: 'switch/on', value: true });
   await api.createCapabilities('device/01', [{ capability_name: 'switch/on', type: 'boolean' }]);
 
-  assert.deepEqual(calls.map(({ method, url }) => ({ method, url })), [
-    { method: 'get', url: 'devices/device%2F01' },
-    { method: 'patch', url: 'devices/device%2F01' },
-    { method: 'put', url: 'devices/device%2F01/properties' },
-    { method: 'get', url: 'devices/device%2F01/capabilities/switch%2Fon' },
-    { method: 'patch', url: 'devices/device%2F01/capabilities/value' },
-    { method: 'post', url: 'devices/device%2F01/capabilities' },
-  ]);
+  assert.deepEqual(
+    calls.map(({ method, url }) => ({ method, url })),
+    [
+      { method: 'get', url: 'devices/device%2F01' },
+      { method: 'patch', url: 'devices/device%2F01' },
+      { method: 'put', url: 'devices/device%2F01/properties' },
+      { method: 'get', url: 'devices/device%2F01/capabilities/switch%2Fon' },
+      { method: 'patch', url: 'devices/device%2F01/capabilities/value' },
+      { method: 'post', url: 'devices/device%2F01/capabilities' },
+    ],
+  );
 });
 
 test('deviceApi traduz falhas HTTP para erros da aplicação', async () => {
@@ -62,6 +65,6 @@ test('deviceApi traduz falhas HTTP para erros da aplicação', async () => {
   });
   await assert.rejects(
     () => unavailableApi.updateDevice('device-01', []),
-    (error) => error instanceof InfrastructureError && error.retryable === true
+    (error) => error instanceof InfrastructureError && error.retryable === true,
   );
 });

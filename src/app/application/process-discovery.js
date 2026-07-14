@@ -3,7 +3,13 @@ const { buildCapabilityToCreate } = require('../domain/capability-rules');
 const { isNotFoundError } = require('../utils/errors');
 const { validateDeviceId } = require('./validation');
 
-function createProcessDiscovery({ deviceApi, processPropertyUpdate, clock, platformResolver, logger }) {
+function createProcessDiscovery({
+  deviceApi,
+  processPropertyUpdate,
+  clock,
+  platformResolver,
+  logger,
+}) {
   return async function processDiscovery(payload) {
     validateDeviceId(payload?.device_id);
     const deviceId = payload.device_id;

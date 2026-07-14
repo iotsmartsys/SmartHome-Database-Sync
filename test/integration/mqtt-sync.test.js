@@ -46,7 +46,11 @@ test('fluxo MQTT → aplicação → API local → publicação mantém o contra
   const server = await startApiServer(async (request, response) => {
     let body = '';
     for await (const chunk of request) body += chunk;
-    requests.push({ method: request.method, url: request.url, body: body ? JSON.parse(body) : undefined });
+    requests.push({
+      method: request.method,
+      url: request.url,
+      body: body ? JSON.parse(body) : undefined,
+    });
     response.writeHead(200, { 'content-type': 'application/json' });
     response.end(JSON.stringify({ ok: true }));
   });
@@ -70,21 +74,31 @@ test('fluxo MQTT → aplicação → API local → publicação mantém o contra
       },
     };
 
-    await handlers.handleMessage(client, 'capability/input', Buffer.from(JSON.stringify({
-      device_id: 'device/01',
-      capability_name: 'on_off',
-      value: false,
-    })));
+    await handlers.handleMessage(
+      client,
+      'capability/input',
+      Buffer.from(
+        JSON.stringify({
+          device_id: 'device/01',
+          capability_name: 'on_off',
+          value: false,
+        }),
+      ),
+    );
 
-    assert.deepEqual(requests, [{
-      method: 'PATCH',
-      url: '/devices/device%2F01/capabilities/value',
-      body: { capability_name: 'on_off', value: false },
-    }]);
-    assert.deepEqual(client.published, [{
-      topic: 'device/updated',
-      payload: { device_id: 'device/01', capability_name: 'on_off', value: false },
-    }]);
+    assert.deepEqual(requests, [
+      {
+        method: 'PATCH',
+        url: '/devices/device%2F01/capabilities/value',
+        body: { capability_name: 'on_off', value: false },
+      },
+    ]);
+    assert.deepEqual(client.published, [
+      {
+        topic: 'device/updated',
+        payload: { device_id: 'device/01', capability_name: 'on_off', value: false },
+      },
+    ]);
   } finally {
     await server.close();
   }

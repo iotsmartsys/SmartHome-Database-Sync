@@ -4,9 +4,7 @@ const test = require('node:test');
 const http = require('../../src/app/utils/http');
 const { formatDate } = require('../../src/app/utils/date');
 const { mapPayloadToCreate } = require('../../src/app/managers/devices');
-const {
-  buildZigbeeDiscoveryPayload,
-} = require('../../src/app/domain/capability-rules');
+const { buildZigbeeDiscoveryPayload } = require('../../src/app/domain/capability-rules');
 const { createCapability } = require('../../src/app/managers/capabilities');
 const { createConnectionLogContext } = require('../../src/app/mqtt/client');
 
@@ -44,7 +42,7 @@ test('discovery mapeia propriedades e preserva valores falsy', () => {
         { name: 'counter', value: 0 },
       ],
     },
-    'ESP32'
+    'ESP32',
   );
 
   assert.deepEqual(mapped.properties, [
@@ -61,7 +59,7 @@ test('discovery aceita properties ausente', () => {
 test('discovery rejeita device_id ausente antes de construir URL', () => {
   assert.throws(
     () => mapPayloadToCreate({ properties: [] }, 'ESP32'),
-    /device_id deve ser uma string não vazia/
+    /device_id deve ser uma string não vazia/,
   );
 });
 

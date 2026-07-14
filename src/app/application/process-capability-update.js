@@ -19,13 +19,28 @@ function createProcessCapabilityUpdate({ deviceApi, processPropertyUpdate, clock
       return processPropertyUpdate({ deviceId, propertyName: capabilityName, value });
     }
     if (capabilityName === 'wifi_signal') {
-      return processPropertyUpdate({ deviceId, propertyName: capabilityName, value, description: 'Sinal Wi-Fi' });
+      return processPropertyUpdate({
+        deviceId,
+        propertyName: capabilityName,
+        value,
+        description: 'Sinal Wi-Fi',
+      });
     }
     if (capabilityName === 'wifi_ssid') {
-      return processPropertyUpdate({ deviceId, propertyName: capabilityName, value, description: 'SSID Wi-Fi' });
+      return processPropertyUpdate({
+        deviceId,
+        propertyName: capabilityName,
+        value,
+        description: 'SSID Wi-Fi',
+      });
     }
     if (capabilityName.includes('battery_level')) {
-      return processPropertyUpdate({ deviceId, propertyName: 'battery_level', value, description: 'Nível da Bateria' });
+      return processPropertyUpdate({
+        deviceId,
+        propertyName: 'battery_level',
+        value,
+        description: 'Nível da Bateria',
+      });
     }
 
     try {
@@ -37,24 +52,39 @@ function createProcessCapabilityUpdate({ deviceApi, processPropertyUpdate, clock
     }
 
     if (!payload.type) {
-      throw new ValidationError('type é obrigatório para criar uma capability inexistente', { deviceId, capabilityName });
+      throw new ValidationError('type é obrigatório para criar uma capability inexistente', {
+        deviceId,
+        capabilityName,
+      });
     }
 
     try {
-      await deviceApi.createCapabilities(deviceId, buildCapabilityToCreate(deviceId, {
-        capability_name: capabilityName,
-        description: capabilityName,
-        type: payload.type,
-        value,
-        owner: payload.owner || deviceId,
-      }));
+      await deviceApi.createCapabilities(
+        deviceId,
+        buildCapabilityToCreate(deviceId, {
+          capability_name: capabilityName,
+          description: capabilityName,
+          type: payload.type,
+          value,
+          owner: payload.owner || deviceId,
+        }),
+      );
       logger.info({ device_id: deviceId, capabilityName }, 'Capability criada com sucesso');
       return capabilityUpdated(deviceId, capabilityName, value);
     } catch (error) {
-      if (isNotFoundError(error) && isZigbeeDeviceId(deviceId) && isDeviceNotFoundResponse(error.response)) {
+      if (
+        isNotFoundError(error) &&
+        isZigbeeDeviceId(deviceId) &&
+        isDeviceNotFoundResponse(error.response)
+      ) {
         return {
           action: 'discovery_required',
-          events: [{ type: 'discovery_requested', payload: buildZigbeeDiscoveryPayload(deviceId, clock()) }],
+          events: [
+            {
+              type: 'discovery_requested',
+              payload: buildZigbeeDiscoveryPayload(deviceId, clock()),
+            },
+          ],
         };
       }
       throw error;

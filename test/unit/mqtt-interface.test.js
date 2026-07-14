@@ -63,6 +63,10 @@ test('handler usa a aplicação injetada', async () => {
     },
   });
 
-  await handlers.handleMessage({}, 'capability/topic', Buffer.from('{"device_id":"device-01","capability_name":"on_off","value":true}'));
+  await handlers.handleMessage(
+    {},
+    'capability/topic',
+    Buffer.from('{"device_id":"device-01","capability_name":"on_off","value":true}'),
+  );
   assert.deepEqual(payload, { device_id: 'device-01', capability_name: 'on_off', value: true });
 });

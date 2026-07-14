@@ -12,7 +12,10 @@ function validateCapability(deviceId, capabilityName, value) {
     throw new ValidationError('capability_name deve ser uma string não vazia', { deviceId });
   }
   if (value === undefined) {
-    throw new ValidationError('value é obrigatório para atualizar uma capability', { deviceId, capabilityName });
+    throw new ValidationError('value é obrigatório para atualizar uma capability', {
+      deviceId,
+      capabilityName,
+    });
   }
 }
 

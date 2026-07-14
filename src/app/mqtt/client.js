@@ -30,10 +30,7 @@ function createClient() {
     clientId: mqtt_client_id,
     rejectUnauthorized: mqtt_protocol === 'mqtts', // valida o certificado do servidor
   };
-  logger.info(
-    createConnectionLogContext(options),
-    'Configurações MQTT carregadas'
-  );
+  logger.info(createConnectionLogContext(options), 'Configurações MQTT carregadas');
   const client = mqtt.connect(options);
 
   client.on('connect', () => {

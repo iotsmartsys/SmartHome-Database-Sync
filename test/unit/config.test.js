@@ -39,7 +39,7 @@ test('configuração acumula erros e falha antes da inicialização', () => {
       assert.match(error.message, /MQTT_PROTOCOL deve ser um de/);
       assert.match(error.message, /API_URL deve ser uma URL HTTP ou HTTPS válida/);
       return true;
-    }
+    },
   );
 });
 
@@ -48,13 +48,13 @@ test('usuário e senha MQTT devem ser fornecidos juntos', () => {
 
   assert.throws(
     () => validateConfig(config),
-    /MQTT_USER_NAME e MQTT_PASSWORD devem ser informados juntos/
+    /MQTT_USER_NAME e MQTT_PASSWORD devem ser informados juntos/,
   );
 });
 
 test('credenciais MQTT são opcionais quando ambas estão ausentes', () => {
   const config = createConfig(
-    validEnvironment({ MQTT_USER_NAME: undefined, MQTT_PASSWORD: undefined })
+    validEnvironment({ MQTT_USER_NAME: undefined, MQTT_PASSWORD: undefined }),
   );
 
   assert.doesNotThrow(() => validateConfig(config));
