@@ -1,11 +1,15 @@
 const { createClient } = require('./mqtt/client');
-const { registerHandlers } = require('./mqtt/handlers');
+const { createHandlers } = require('./mqtt/handlers');
 const config = require('./utils/config');
+const logger = require('./utils/logger');
+const { deviceApi } = require('./infrastructure/http/device-api');
+const { createApplication } = require('./application/create-application');
 
 function start() {
   config.validateConfig(config);
+  const application = createApplication({ deviceApi, logger });
   const client = createClient();
-  registerHandlers(client);
+  createHandlers({ application }).registerHandlers(client);
   return client;
 }
 
